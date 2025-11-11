@@ -1,9 +1,3 @@
---[[
-	QueueUIController.lua
-	Client-side UI controller for queue system
-	Handles animations, sounds, camera effects, and user interactions
-]]
-
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -15,7 +9,6 @@ local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 local camera = workspace.CurrentCamera
 
--- Wait for modules and GUI
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local QueueService = require(ReplicatedStorage:WaitForChild("QueueService"))
 local RemoteEvents = require(ReplicatedStorage:WaitForChild("RemoteEvents"))
@@ -27,7 +20,6 @@ local casualButton = mainFrame:WaitForChild("Casual")
 local rankedButton = mainFrame:WaitForChild("Ranked")
 local closeButton = mainFrame:WaitForChild("Close")
 
--- Controller state
 local QueueUIController = {
 	isOpen = false,
 	isQueued = false,
@@ -38,7 +30,6 @@ local QueueUIController = {
 	dotAnimation = nil
 }
 
--- Initialize blur effect
 function QueueUIController:CreateBlur()
 	self.blur = Lighting:FindFirstChild("QueueBlur")
 	if not self.blur then
@@ -49,7 +40,6 @@ function QueueUIController:CreateBlur()
 	end
 end
 
--- Initialize sounds
 function QueueUIController:CreateSounds()
 	local soundFolder = SoundService:FindFirstChild("QueueSounds")
 	if not soundFolder then
@@ -58,7 +48,6 @@ function QueueUIController:CreateSounds()
 		soundFolder.Parent = SoundService
 	end
 	
-	-- Helper to create sound
 	local function createSound(name, soundId, volume)
 		local sound = soundFolder:FindFirstChild(name)
 		if not sound then
@@ -71,7 +60,6 @@ function QueueUIController:CreateSounds()
 		return sound
 	end
 	
-	-- Create all sounds
 	self.sounds.Hover = createSound("Hover", GameConfig.Sounds.ButtonHover, GameConfig.Sounds.UIVolume)
 	self.sounds.Click = createSound("Click", GameConfig.Sounds.ButtonClick, GameConfig.Sounds.UIVolume)
 	self.sounds.QueueJoin = createSound("QueueJoin", GameConfig.Sounds.QueueJoin, GameConfig.Sounds.NotificationVolume)
@@ -79,7 +67,6 @@ function QueueUIController:CreateSounds()
 	self.sounds.MatchFound = createSound("MatchFound", GameConfig.Sounds.MatchFound, GameConfig.Sounds.NotificationVolume)
 end
 
--- Play sound
 function QueueUIController:PlaySound(soundName)
 	local sound = self.sounds[soundName]
 	if sound then
@@ -87,7 +74,6 @@ function QueueUIController:PlaySound(soundName)
 	end
 end
 
--- Button hover effect
 function QueueUIController:AddHoverEffect(button, hoverColor, normalColor)
 	local originalColor = normalColor or button.BackgroundColor3
 	
@@ -105,63 +91,51 @@ function QueueUIController:AddHoverEffect(button, hoverColor, normalColor)
 	end)
 end
 
--- Open UI
 function QueueUIController:OpenUI()
 	if self.isOpen then return end
 	self.isOpen = true
 	
-	-- Play sound
 	self:PlaySound("Click")
 	
-	-- Show frame
 	mainFrame.Visible = true
 	
-	-- Animate blur
 	if GameConfig.UI.BlurEnabled then
 		TweenService:Create(self.blur, TweenInfo.new(GameConfig.UI.BlurTransitionTime), {
 			Size = GameConfig.UI.BlurSize
 		}):Play()
 	end
 	
-	-- Animate frame scale (small to normal)
-	mainFrame.Size = UDim2.new(0, 450 * GameConfig.UI.ClosedScale, 0, 350 * GameConfig.UI.ClosedScale)
+	mainFrame.Position = UDim2.new(0.5, 0, -0.5, 0)
 	TweenService:Create(mainFrame, TweenInfo.new(
 		GameConfig.UI.OpenDuration,
 		GameConfig.UI.OpenEasingStyle,
 		GameConfig.UI.OpenEasingDirection
 	), {
-		Size = UDim2.new(0, 450, 0, 350)
+		Position = UDim2.new(0.5, 0, 0.5, 0)
 	}):Play()
 	
-	-- Zoom camera
 	self:ZoomCamera(true)
-	
-	-- Change queue button text
 	queueButton.Text = "^^^^^^"
 end
 
--- Close UI
 function QueueUIController:CloseUI()
 	if not self.isOpen then return end
 	self.isOpen = false
 	
-	-- Play sound
 	self:PlaySound("Click")
 	
-	-- Animate blur
 	if GameConfig.UI.BlurEnabled then
 		TweenService:Create(self.blur, TweenInfo.new(GameConfig.UI.BlurTransitionTime), {
 			Size = 0
 		}):Play()
 	end
 	
-	-- Animate frame scale (normal to small)
 	local tween = TweenService:Create(mainFrame, TweenInfo.new(
 		GameConfig.UI.CloseDuration,
 		GameConfig.UI.CloseEasingStyle,
 		GameConfig.UI.CloseEasingDirection
 	), {
-		Size = UDim2.new(0, 450 * GameConfig.UI.ClosedScale, 0, 350 * GameConfig.UI.ClosedScale)
+		Position = UDim2.new(0.5, 0, -0.5, 0)
 	})
 	
 	tween.Completed:Connect(function()
@@ -170,14 +144,10 @@ function QueueUIController:CloseUI()
 	
 	tween:Play()
 	
-	-- Reset camera
 	self:ZoomCamera(false)
-	
-	-- Update queue button text
 	self:UpdateQueueButtonText()
 end
 
--- Zoom camera
 function QueueUIController:ZoomCamera(zoomIn)
 	local character = player.Character
 	if not character then return end
@@ -197,7 +167,6 @@ function QueueUIController:ZoomCamera(zoomIn)
 	end
 end
 
--- Start queue button dot animation
 function QueueUIController:StartDotAnimation()
 	if self.dotAnimation then
 		self.dotAnimation:Disconnect()
@@ -216,7 +185,6 @@ function QueueUIController:StartDotAnimation()
 	end)
 end
 
--- Stop dot animation
 function QueueUIController:StopDotAnimation()
 	if self.dotAnimation then
 		self.dotAnimation:Disconnect()
@@ -224,12 +192,11 @@ function QueueUIController:StopDotAnimation()
 	end
 end
 
--- Update queue button text based on status
 function QueueUIController:UpdateQueueButtonText()
 	if self.isOpen then
 		queueButton.Text = "^^^^^^"
 	elseif self.currentStatus == QueueService.QueueStatus.Queuing then
-		-- Dot animation handled separately
+		-- Handled by dot animation
 	elseif self.currentStatus == QueueService.QueueStatus.MatchFound then
 		queueButton.Text = "MATCH FOUND!"
 		queueButton.BackgroundColor3 = Color3.fromRGB(50, 255, 50)
@@ -242,70 +209,63 @@ function QueueUIController:UpdateQueueButtonText()
 	end
 end
 
--- Join queue
 function QueueUIController:JoinQueue(mode)
 	if self.isQueued then return end
 	
 	self.isQueued = true
 	self.currentStatus = QueueService.QueueStatus.Queuing
 	
-	-- Close UI
 	self:CloseUI()
-	
-	-- Play sound
 	self:PlaySound("QueueJoin")
-	
-	-- Start dot animation
 	self:StartDotAnimation()
 	
-	-- Send to server
 	RemoteEvents.QueueJoin:FireServer(mode, GameConfig.Queue.DefaultRegion)
 	
 	print("[QueueUI] Joined " .. mode .. " queue")
 end
 
--- Leave queue
 function QueueUIController:LeaveQueue()
 	if not self.isQueued then return end
 	
 	self.isQueued = false
 	self.currentStatus = QueueService.QueueStatus.NotQueued
 	
-	-- Play sound
 	self:PlaySound("QueueLeave")
-	
-	-- Stop dot animation
 	self:StopDotAnimation()
-	
-	-- Update button
 	self:UpdateQueueButtonText()
 	
-	-- Send to server
 	RemoteEvents.QueueLeave:FireServer()
 	
 	print("[QueueUI] Left queue")
 end
 
--- Initialize
 function QueueUIController:Initialize()
 	print("[QueueUI] Initializing...")
 	
-	-- Create effects
 	self:CreateBlur()
 	self:CreateSounds()
 	
-	-- Set up button hover effects
-	self:AddHoverEffect(queueButton)
 	self:AddHoverEffect(casualButton, Color3.fromRGB(70, 220, 120), Color3.fromRGB(50, 200, 100))
 	self:AddHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
 	
-	-- Queue button click
+	queueButton.MouseEnter:Connect(function()
+		if self.isQueued then
+			local originalText = queueButton.Text
+			queueButton.Text = "CANCEL QUEUE"
+			queueButton.MouseLeave:Once(function()
+				if self.isQueued then
+					self:UpdateQueueButtonText()
+				end
+			end)
+		else
+			self:PlaySound("Hover")
+		end
+	end)
+	
 	queueButton.MouseButton1Click:Connect(function()
 		if self.isQueued then
-			-- Leave queue
 			self:LeaveQueue()
 		else
-			-- Toggle UI
 			if self.isOpen then
 				self:CloseUI()
 			else
@@ -314,23 +274,19 @@ function QueueUIController:Initialize()
 		end
 	end)
 	
-	-- Close button click
 	closeButton.MouseButton1Click:Connect(function()
 		self:CloseUI()
 	end)
 	
-	-- Casual button click
 	casualButton.MouseButton1Click:Connect(function()
 		self:PlaySound("Click")
 		self:JoinQueue(QueueService.QueueMode.Casual)
 	end)
 	
-	-- Ranked button click (disabled for now)
 	rankedButton.MouseButton1Click:Connect(function()
 		print("[QueueUI] Ranked mode not yet available")
 	end)
 	
-	-- Listen for queue status updates from server
 	RemoteEvents.QueueStatusUpdate.OnClientEvent:Connect(function(status)
 		self.currentStatus = status
 		
@@ -347,7 +303,6 @@ function QueueUIController:Initialize()
 		self:UpdateQueueButtonText()
 	end)
 	
-	-- Listen for match found
 	RemoteEvents.MatchFound.OnClientEvent:Connect(function()
 		print("[QueueUI] Match found! Preparing to teleport...")
 		self:PlaySound("MatchFound")
@@ -356,7 +311,6 @@ function QueueUIController:Initialize()
 	print("[QueueUI] Initialized successfully!")
 end
 
--- Start the controller
 QueueUIController:Initialize()
 
 return QueueUIController

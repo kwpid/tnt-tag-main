@@ -1,209 +1,138 @@
 # Roblox Queue System - Setup Guide
 
-## 📋 Overview
-This is a professional matchmaking and queue system for Roblox games. Players can queue for matches, get matched with others in their region, and be teleported to a sub-place for gameplay.
+## Overview
+Professional matchmaking and queue system for Roblox games with animated UI, region-based matchmaking, and sub-place teleportation.
 
-## 🏗️ Project Structure
+## Project Structure
 
 ```
 Lobby_Game/
 ├── ReplicatedStorage/
-│   ├── GameConfig.lua          # Main configuration (EDIT THIS FIRST!)
-│   ├── QueueService.lua        # Shared queue utilities
-│   └── RemoteEvents.lua        # Client-server communication
+│   ├── GameConfig.lua          # Main configuration
+│   ├── QueueService.lua        # Queue utilities
+│   └── RemoteEvents.lua        # Client-server events
 │
 ├── ServerScriptService/
-│   ├── InitializeServer.lua    # Server initialization
-│   ├── QueueManager.lua        # Matchmaking logic
-│   └── File.lua                # (can be deleted)
+│   ├── InitializeServer.lua    # Server startup
+│   └── QueueManager.lua        # Matchmaking logic
 │
-├── StarterGui/
-│   ├── CreateQueueGUI.lua      # Creates the UI
-│   └── README.txt              # GUI setup instructions
-│
-└── StarterPlayer/
-    └── StarterPlayerScripts/
-        └── QueueUIController.lua   # Client UI controller
+└── StarterPlayer/StarterPlayerScripts/
+    └── QueueUIController.lua   # Client UI controller
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
-### Step 1: Set Up Your Sub-Place
-1. Create a new place in Roblox Studio (this will be your Actual_Game)
-2. Publish it
-3. Copy the Place ID from the browser URL or game settings
+### 1. Create Your Sub-Place
+- Create a new place in Roblox Studio (Actual_Game)
+- Publish it and copy the Place ID
 
-### Step 2: Configure the System
-Open `ReplicatedStorage/GameConfig.lua` and update:
-
+### 2. Configure
+Open `ReplicatedStorage/GameConfig.lua`:
 ```lua
 GameConfig.SubPlace = {
-    PlaceId = YOUR_ACTUAL_GAME_PLACE_ID, -- Replace with actual ID!
-    AccessCode = nil
+    PlaceId = YOUR_ACTUAL_GAME_PLACE_ID
 }
 ```
 
-### Step 3: Add Sound Effects (Optional but Recommended)
-In `GameConfig.Sounds`, replace the sound IDs with your own:
+### 3. Create UI in StarterGui
+Create a ScreenGui named "QueueGUI" with:
+- **Button** (TextButton) - Main queue button
+- **Main** (Frame) - Menu container
+  - **Casual** (TextButton)
+  - **Ranked** (TextButton)
+  - **Close** (TextButton)
 
-```lua
-GameConfig.Sounds = {
-    ButtonHover = "rbxassetid://YOUR_HOVER_SOUND",
-    ButtonClick = "rbxassetid://YOUR_CLICK_SOUND",
-    -- etc...
-}
-```
+### 4. Copy Scripts to Roblox Studio
 
-You can find free sounds in the Roblox Library or use the defaults.
+**ReplicatedStorage:**
+- GameConfig, QueueService, RemoteEvents
 
-### Step 4: Copy Files to Roblox Studio
+**ServerScriptService:**
+- InitializeServer, QueueManager
 
-**In Roblox Studio:**
+**StarterPlayer > StarterPlayerScripts:**
+- QueueUIController
 
-1. **ReplicatedStorage:**
-   - Create a folder in ReplicatedStorage (if you want organization)
-   - Copy all 3 module scripts from `Lobby_Game/ReplicatedStorage/`
+### 5. Test
+- Start test server with 2+ players
+- Click QUEUE → Select CASUAL
+- Matchmaking starts automatically
 
-2. **ServerScriptService:**
-   - Copy `InitializeServer.lua` and `QueueManager.lua`
-   - Delete or ignore `File.lua`
-
-3. **StarterGui:**
-   - Copy `CreateQueueGUI.lua` as a LocalScript
-
-4. **StarterPlayer > StarterPlayerScripts:**
-   - Copy `QueueUIController.lua` as a LocalScript
-
-### Step 5: Test!
-1. Start a test server with at least 2 players
-2. Click the "QUEUE" button
-3. Select "CASUAL"
-4. Wait for matchmaking (should take 5-10 seconds with min players)
-
-## ⚙️ Configuration Options
+## Configuration
 
 ### Queue Settings
-Edit in `GameConfig.Queue`:
-
 ```lua
-MinPlayersPerMatch = 2,        -- Minimum players needed
-MaxPlayersPerMatch = 10,       -- Maximum players per match
-MaxQueueTime = 120,            -- Force match after this many seconds
-MatchmakingInterval = 5,       -- Check for matches every X seconds
+MinPlayersPerMatch = 2
+MaxPlayersPerMatch = 10
+MaxQueueTime = 120
+MatchmakingInterval = 5
 ```
 
-### UI Customization
-Edit in `GameConfig.UI`:
-
+### UI Settings
 ```lua
-OpenDuration = 0.3,            -- Animation speed
-CameraZoomOffset = 10,         -- Camera zoom amount
-BlurSize = 24,                 -- Background blur intensity
-QueueDotsSpeed = 0.5,          -- "QUEUING..." animation speed
+OpenDuration = 0.3
+CameraZoomOffset = 10
+BlurSize = 24
+QueueDotsSpeed = 1.0
 ```
 
 ### Debug Mode
-For testing without teleportation:
-
 ```lua
 GameConfig.Debug = {
     Enabled = true,
-    TestMode = true,  -- Set to true to skip teleportation
+    TestMode = true,  -- Skip teleportation
 }
 ```
 
-## 🎨 UI Customization
+## UI Features
 
-The UI is created in `CreateQueueGUI.lua`. You can modify:
-- Colors (search for `Color3.fromRGB`)
-- Sizes (search for `UDim2.new`)
-- Font (change `Enum.Font.GothamBold`)
-- Text (change any `Text = "..."` property)
+**Queue Button States:**
+- `QUEUE` - Default, click to open menu
+- `^^^^^^` - Menu is open
+- `QUEUING.` / `QUEUING..` / `QUEUING...` - Animated while searching
+- `CANCEL QUEUE` - Shows on hover while queuing
+- `MATCH FOUND!` - Match ready (green)
+- `TELEPORTING...` - Teleporting (yellow)
 
-## 🔧 How It Works
+**Animations:**
+- Menu slides from top
+- Background blur effect
+- Camera zoom
+- Smooth transitions
 
-### Client Side:
-1. Player clicks QUEUE button
-2. UI opens with animations (blur, zoom, scale)
-3. Player selects mode (Casual/Ranked)
-4. UI closes, button shows "QUEUING..."
-5. Receives match status updates from server
+**Interaction:**
+- Click queue button while queuing to cancel
+- Hover shows "CANCEL QUEUE" hint
+- Close button or click queue button again to close menu
 
-### Server Side:
-1. Receives queue join request
-2. Adds player to regional queue
-3. Matchmaking loop checks for enough players
-4. Creates match when conditions met
-5. Teleports players to sub-place
+## Customization
 
-## 📝 Important Notes
+**Colors:** Edit in your UI creation
+**Sounds:** Change IDs in `GameConfig.Sounds`
+**Timings:** Adjust in `GameConfig.UI`
+**Regions:** Modify in `GameConfig.Queue.AvailableRegions`
 
-⚠️ **Required Configuration:**
-- You MUST set `GameConfig.SubPlace.PlaceId` or teleportation will fail
-- The sub-place must be published and under the same universe
-
-💡 **Regions:**
-- Currently uses "Auto" which defaults to NA-East
-- You can implement ping-based detection in `QueueManager:DetectPlayerRegion()`
-
-🎵 **Sounds:**
-- Default sounds are from Roblox library
-- Replace with your own for better branding
-
-## 🐛 Troubleshooting
+## Troubleshooting
 
 **Players not teleporting:**
 - Check SubPlace.PlaceId is correct
 - Ensure sub-place is published
-- Check Output for error messages
 - Set TestMode = true to test without teleporting
 
 **UI not appearing:**
-- Check CreateQueueGUI.lua is in StarterGui
-- Check QueueUIController.lua is in StarterPlayerScripts
-- Look for errors in Output window
+- Check QueueUIController is in StarterPlayerScripts
+- Verify UI structure matches required hierarchy
+- Check Output for errors
 
 **Matchmaking not working:**
-- Check MinPlayersPerMatch setting
-- Ensure enough players are queuing
-- Check server Output for "[QueueManager]" messages
+- Verify MinPlayersPerMatch setting
+- Ensure enough players queuing
+- Check Output for "[QueueManager]" logs
 
-## 🔍 Debug Output
+## Next Steps
 
-When `GameConfig.Debug.Enabled = true`, you'll see messages like:
-
-```
-[QueueManager] PlayerName joined Casual queue in NA-East region
-=== Queue Statistics ===
-  Casual - NA-East: 2 players
-========================
-[QueueManager] Creating Casual match in NA-East with 2 players
-```
-
-## 📈 Future Enhancements
-
-Easy additions you can make:
-- [ ] Ranked mode with MMR tracking
-- [ ] Party system (queue with friends)
-- [ ] Queue time estimates
-- [ ] Map voting
-- [ ] Skill-based matchmaking
-- [ ] Cross-region matching after timeout
-
-## 🎯 Next Steps
-
-1. Set up your Actual_Game place with game logic
-2. Receive teleport data in Actual_Game:
-```lua
-local teleportData = player:GetJoinData().TeleportData
-print(teleportData.Mode) -- "Casual" or "Ranked"
-print(teleportData.Region) -- Player's region
-```
-
-3. Customize the UI to match your game's theme
-4. Add sound effects for better polish
-5. Test with real players!
-
----
-
-**Need help?** Check the code comments - every module is thoroughly documented!
+1. Set up Actual_Game with game logic
+2. Customize UI colors and styling
+3. Add custom sound effects
+4. Test with real players
+5. Adjust matchmaking times as needed

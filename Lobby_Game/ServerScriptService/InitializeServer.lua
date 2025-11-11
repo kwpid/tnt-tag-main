@@ -1,28 +1,19 @@
---[[
-	InitializeServer.lua
-	Main server initialization script
-	Loads all necessary server modules and systems
-]]
-
 print("=========================================")
 print("   Lobby Game Server - Initializing")
 print("=========================================")
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- Wait for modules to load
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local RemoteEvents = require(ReplicatedStorage:WaitForChild("RemoteEvents"))
 local QueueService = require(ReplicatedStorage:WaitForChild("QueueService"))
 
 print("[Server] Modules loaded successfully")
 
--- Initialize Queue Manager (it auto-initializes)
 local QueueManager = require(script.Parent:WaitForChild("QueueManager"))
 
 print("[Server] Queue Manager initialized")
 
--- Print configuration
 print("=========================================")
 print("   Configuration Summary")
 print("=========================================")

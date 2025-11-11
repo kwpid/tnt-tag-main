@@ -1,13 +1,7 @@
---[[
-	RemoteEvents.lua
-	Creates and manages all RemoteEvents/RemoteFunctions for client-server communication
-]]
-
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local RemoteEvents = {}
 
--- Create folder for remote events
 local remoteFolder = ReplicatedStorage:FindFirstChild("RemoteEvents")
 if not remoteFolder then
 	remoteFolder = Instance.new("Folder")
@@ -15,7 +9,6 @@ if not remoteFolder then
 	remoteFolder.Parent = ReplicatedStorage
 end
 
--- Helper function to create RemoteEvent
 local function createRemoteEvent(name)
 	local event = remoteFolder:FindFirstChild(name)
 	if not event then
@@ -26,7 +19,6 @@ local function createRemoteEvent(name)
 	return event
 end
 
--- Helper function to create RemoteFunction
 local function createRemoteFunction(name)
 	local func = remoteFolder:FindFirstChild(name)
 	if not func then
@@ -37,13 +29,10 @@ local function createRemoteFunction(name)
 	return func
 end
 
--- Queue Events
 RemoteEvents.QueueJoin = createRemoteEvent("QueueJoin")
 RemoteEvents.QueueLeave = createRemoteEvent("QueueLeave")
 RemoteEvents.QueueStatusUpdate = createRemoteEvent("QueueStatusUpdate")
 RemoteEvents.MatchFound = createRemoteEvent("MatchFound")
-
--- Functions
 RemoteEvents.GetQueueStatus = createRemoteFunction("GetQueueStatus")
 
 return RemoteEvents

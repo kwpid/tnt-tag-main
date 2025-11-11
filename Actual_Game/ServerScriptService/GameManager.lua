@@ -130,16 +130,15 @@ function GameManager:StartGame()
                 return
         end
         
+        print("[GameManager] Resetting players and assigning to Game team...")
         for userId, playerData in pairs(activePlayers) do
                 local player = playerData.Player
                 if player and player.Parent then
-                        player.Team = Teams.Game
-                        
                         if player.Character then
                                 local humanoid = player.Character:FindFirstChild("Humanoid")
                                 if humanoid and humanoid.Health > 0 then
                                         humanoid.Health = humanoid.MaxHealth
-                                elseif player.Character then
+                                else
                                         player:LoadCharacter()
                                 end
                         else
@@ -149,11 +148,23 @@ function GameManager:StartGame()
         end
         
         task.wait(2)
+        
+        for userId, playerData in pairs(activePlayers) do
+                local player = playerData.Player
+                if player and player.Parent then
+                        player.Team = Teams.Game
+                        print("[GameManager] Assigned " .. player.Name .. " to Game team")
+                end
+        end
+        
+        task.wait(0.5)
         self:SpawnPlayers()
         
         self.PVP:InitializeAlivePlayers()
         
         local playerCount = self.PVP:GetAliveCount()
+        print("[GameManager] Player count after initialization: " .. playerCount)
+        
         if playerCount < 2 then
                 warn("[GameManager] Not enough players to start game (need 2+, have " .. playerCount .. ")")
                 self:EndGame(nil)

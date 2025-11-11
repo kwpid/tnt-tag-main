@@ -143,9 +143,14 @@ end
 
 function PVPMain:InitializeAlivePlayers()
         alivePlayers = {}
-        for _, player in ipairs(Teams.Game:GetPlayers()) do
+        local gamePlayers = Teams.Game:GetPlayers()
+        print("[PVPMain] Game team has " .. #gamePlayers .. " players")
+        
+        for _, player in ipairs(gamePlayers) do
                 alivePlayers[player.UserId] = true
+                print("[PVPMain] Added " .. player.Name .. " to alive players")
         end
+        
         print("[PVPMain] Initialized " .. self:GetAliveCount() .. " alive players")
 end
 

@@ -42,9 +42,11 @@ Actual_Game/
 │
 ├── StarterPlayer/StarterPlayerScripts/
 │   ├── MatchResultClient.lua       # Client result handler
-│   ├── PVPClient.lua               # PVP hitbox system
+│   ├── PVPClient.lua               # PVP hitbox system with arm swing
 │   ├── GhostSystem.lua             # Ghost mode & Back to Lobby
-│   └── RoundUI.lua                 # Round timer UI
+│   ├── RoundUI.lua                 # Round timer UI controller
+│   ├── TNTIndicator.lua            # TNT indicator UI controller
+│   └── CameraController.lua        # First/Third person camera toggle
 │
 └── StarterGui/MainGUI/
     └── BackToLobby (TextButton)    # Return to lobby UI
@@ -56,12 +58,14 @@ Actual_Game/
 ### TNT Tag Gameplay
 - **Game Mode:** Elimination-style TNT Tag
 - **Max Players:** 25 per server
-- **Round Timer:** 45 seconds until TNT explodes
-- **PVP System:** Click to hit players (knockback + red highlight)
+- **Round Timer:** 45 seconds until TNT explodes (displayed on-screen)
+- **PVP System:** Click to hit players (arm swing animation, knockback, red highlight)
 - **TNT Transfer:** Hit other players to pass the TNT
+- **TNT Indicator:** On-screen warning when you have TNT
 - **Win Condition:** Last player alive wins
 - **Ghost Mode:** Dead players can spectate or return to lobby
 - **Map System:** Random map selection from ServerStorage.Maps
+- **Camera System:** Press Q to switch between First/Third person (fixed 10 stud distance)
 
 ### Queue System
 - Region-based matchmaking
@@ -168,6 +172,10 @@ Debug:
 - **2025-11-11:** Map loading and player spawning system
 - **2025-11-11:** Ghost system with Back to Lobby UI
 - **2025-11-11:** Round management and game flow
+- **2025-11-11:** Arm swing animation on player hits
+- **2025-11-11:** Round timer UI (countdown display)
+- **2025-11-11:** TNT indicator UI (shows when player has TNT)
+- **2025-11-11:** Camera controller (Q to switch First/Third person)
 
 ## User Preferences
 None specified.

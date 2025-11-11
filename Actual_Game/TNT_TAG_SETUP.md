@@ -52,8 +52,10 @@ In **StarterGui**, create:
 ```
 StarterGui
 └── MainGUI (ScreenGui)
-    └── BackToLobby (TextButton)
-        └── BackToLobby (LocalScript)
+    ├── BackToLobby (TextButton)
+    │   └── BackToLobby (LocalScript)
+    ├── RoundTimer (TextLabel)
+    └── HasTntTxt (TextLabel)
 ```
 
 **BackToLobby Button Properties:**
@@ -61,7 +63,31 @@ StarterGui
 - Text: "Return to Lobby"
 - Position your button where you want it
 
-### 5. Copy Scripts to Roblox Studio
+**RoundTimer TextLabel Properties:**
+- Visible: false (controlled by script)
+- Text: "" (will show round countdown)
+- Position: Top center recommended
+
+**HasTntTxt TextLabel Properties:**
+- Visible: false (controlled by script)
+- Text: "" (will show "⚠️ YOU HAVE TNT! ⚠️")
+- TextColor3: Red (255, 50, 50)
+- Position: Center or top recommended
+
+### 5. Create Animations
+In **ReplicatedStorage**, create:
+```
+ReplicatedStorage
+└── Animations (Folder)
+    └── ArmSwing (Animation)
+```
+
+**ArmSwing Animation:**
+- Upload your arm swing animation to Roblox
+- Place the Animation object in the Animations folder
+- This plays when a player hits another player
+
+### 6. Copy Scripts to Roblox Studio
 
 **ReplicatedStorage:**
 - GameConfig.lua
@@ -78,11 +104,13 @@ StarterGui
 - PVPClient.lua
 - GhostSystem.lua
 - RoundUI.lua
+- TNTIndicator.lua
+- CameraController.lua
 
 **StarterGui > MainGUI > BackToLobby:**
 - BackToLobby.lua (the script)
 
-### 6. Configure Settings
+### 7. Configure Settings
 Edit **GameConfig.lua** in ReplicatedStorage:
 
 ```lua
@@ -101,12 +129,12 @@ GameConfig.PVP = {
 }
 ```
 
-### 7. Enable Required Services
+### 8. Enable Required Services
 In Roblox Studio settings:
 - ✓ Enable Studio Access to API Services
 - ✓ Enable "Allow Third Party Teleports" (Game Settings > Security)
 
-### 8. Set Place ID
+### 9. Set Place ID
 If using the lobby system, set the lobby Place ID in GameConfig:
 ```lua
 GameConfig.LobbyPlaceId = YOUR_LOBBY_PLACE_ID
@@ -118,10 +146,14 @@ GameConfig.LobbyPlaceId = YOUR_LOBBY_PLACE_ID
 1. Join from queue (or join Actual_Game directly for testing)
 2. Wait for first round to start (10s delay)
 3. One random player becomes "IT" with TNT on their head
-4. Click other players to hit them and transfer the TNT (if you're IT)
-5. Avoid having TNT when the 45-second timer runs out
-6. Last player standing wins!
-7. Dead players can click "Return to Lobby" to go back
+4. **Click other players to hit them** (arm swings, red highlight, knockback)
+5. If you're IT, hitting transfers the TNT to the victim
+6. **Press Q** to switch between First Person and Third Person camera
+7. Watch the **Round Timer** at the top (shows countdown)
+8. Avoid having TNT when the 45-second timer runs out
+9. If you have TNT, **"⚠️ YOU HAVE TNT! ⚠️"** appears on screen
+10. Last player standing wins!
+11. Dead players can click "Return to Lobby" to go back
 
 ### Game Flow:
 ```
@@ -215,6 +247,18 @@ The game tracks:
 
 Stats are sent back to the lobby and saved to DataStore automatically.
 
+## Game Controls
+
+**Mouse:**
+- Left Click: Hit/Attack player (when in range)
+
+**Keyboard:**
+- Q: Switch between First Person and Third Person camera
+
+**Camera Modes:**
+- **Third Person**: Fixed distance of 10 studs from character
+- **First Person**: Traditional first-person view
+
 ## Advanced Customization
 
 ### Custom TNT Explosion Effect:
@@ -222,6 +266,12 @@ Edit PVPMain.lua in the `ExplodeTNT()` function to add visual effects.
 
 ### Custom Hit Effects:
 Edit PVPClient.lua to change highlight colors or add sounds.
+
+### Custom Arm Swing Animation:
+Replace the ArmSwing animation in ReplicatedStorage.Animations with your own.
+
+### Different Camera Distance:
+Edit CameraController.lua and change `THIRD_PERSON_DISTANCE = 10` to your preferred distance.
 
 ### Different Round Times Per Round:
 Modify GameManager.lua to adjust `GameConfig.Game.RoundTime` dynamically.

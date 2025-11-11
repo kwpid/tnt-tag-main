@@ -1,4 +1,2 @@
--- Lobby script placeholder
--- This script will contain lobby game logic for Roblox
-
-print("Lobby script loaded")
+-- This file has been replaced by InitializeServer.lua
+-- You can delete this file

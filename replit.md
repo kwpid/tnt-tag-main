@@ -1,7 +1,7 @@
-# Roblox Matchmaking Game Project
+# Roblox TNT Tag Game Project
 
 ## Overview
-A professional Roblox game featuring queue system, matchmaking, player progression with DataStore persistence, and multi-place teleportation. Players queue in Lobby_Game, get matched, teleport to Actual_Game for matches, and earn XP/levels/stats.
+A professional Roblox game featuring queue system, matchmaking, player progression with DataStore persistence, and multi-place teleportation. Players queue in Lobby_Game, get matched, and teleport to Actual_Game to play TNT Tag - a fast-paced elimination game where players try to avoid being "IT" when the TNT explodes. The last player standing wins!
 
 ## Project Type
 Roblox game development - Lua scripts for Roblox Studio.
@@ -30,20 +30,42 @@ Lobby_Game/
 ### Actual_Game (Sub-Place)
 ```
 Actual_Game/
-├── ServerScriptService/
-│   ├── GameManager.lua             # Match management
-│   ├── MatchResultHandler.lua      # Result processing
-│   └── PVPMain                     # Game logic (empty)
+├── ReplicatedStorage/
+│   ├── GameConfig.lua              # TNT Tag game configuration
+│   ├── RemoteEvents.lua            # Client-server events
+│   └── PlayerDataService.lua       # Data helper functions
 │
-└── StarterPlayer/StarterPlayerScripts/
-    └── MatchResultClient.lua       # Client result handler
+├── ServerScriptService/
+│   ├── GameManager.lua             # TNT Tag match management
+│   ├── PVPMain.lua                 # TNT Tag game logic
+│   └── MatchResultHandler.lua      # Result processing
+│
+├── StarterPlayer/StarterPlayerScripts/
+│   ├── MatchResultClient.lua       # Client result handler
+│   ├── PVPClient.lua               # PVP hitbox system
+│   ├── GhostSystem.lua             # Ghost mode & Back to Lobby
+│   └── RoundUI.lua                 # Round timer UI
+│
+└── StarterGui/MainGUI/
+    └── BackToLobby (TextButton)    # Return to lobby UI
+        └── BackToLobby.lua         # UI handler script
 ```
 
 ## Key Features
 
+### TNT Tag Gameplay
+- **Game Mode:** Elimination-style TNT Tag
+- **Max Players:** 25 per server
+- **Round Timer:** 45 seconds until TNT explodes
+- **PVP System:** Click to hit players (knockback + red highlight)
+- **TNT Transfer:** Hit other players to pass the TNT
+- **Win Condition:** Last player alive wins
+- **Ghost Mode:** Dead players can spectate or return to lobby
+- **Map System:** Random map selection from ServerStorage.Maps
+
 ### Queue System
 - Region-based matchmaking
-- Configurable player counts (2-10)
+- Configurable player counts (2-25)
 - Auto-matching after timeout
 - Cancel queue functionality
 - Test mode for development
@@ -141,6 +163,11 @@ Debug:
 - **2025-11-11:** XP/Level progression system
 - **2025-11-11:** Match result handling across places
 - **2025-11-11:** Cancel queue with red hover indicator
+- **2025-11-11:** TNT Tag game implementation (PVP system, TNT mechanics)
+- **2025-11-11:** Team system (Lobby/Game) with auto-assignment
+- **2025-11-11:** Map loading and player spawning system
+- **2025-11-11:** Ghost system with Back to Lobby UI
+- **2025-11-11:** Round management and game flow
 
 ## User Preferences
 None specified.
@@ -196,10 +223,18 @@ Results → Update Stats → Save Data → Return to Lobby
 See `SETUP_GUIDE.md` for exact file placement.
 
 ## Main Entry Points
+
+### Lobby_Game
 - **Server:** InitializeServer.lua
 - **Client:** QueueUIController.lua
 - **Config:** GameConfig.lua
 - **Data:** PlayerDataManager.lua
+
+### Actual_Game (TNT Tag)
+- **Server:** GameManager.lua
+- **Game Logic:** PVPMain.lua
+- **Config:** GameConfig.lua (Actual_Game)
+- **Client:** PVPClient.lua, GhostSystem.lua
 
 ## Debug Output
 - `[Server]` - Initialization

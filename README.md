@@ -1,16 +1,17 @@
 # Roblox Matchmaking Game
 
-Professional Roblox game with queue system, matchmaking, and multi-place teleportation.
+Professional Roblox game with queue system, matchmaking, player progression, and multi-place teleportation.
 
 ## Features
 
-- Queue System with animated UI
-- Region-based matchmaking
-- Multi-place teleportation
-- Professional animations (slide, blur, zoom)
-- Sound effects
-- Cancel queue functionality
-- Highly configurable
+- **Queue System** - Animated UI with region-based matchmaking
+- **Player Progression** - Wins, losses, levels, XP, win streaks
+- **Leaderstats** - Wins, Level, Win Streak visible on player list
+- **DataStore** - Persistent player data saves automatically
+- **Multi-Place** - Teleportation between Lobby and Game
+- **Professional UI** - Slide animations, blur, camera zoom
+- **Sound Effects** - Hover, click, notifications
+- **Highly Configurable** - Everything in GameConfig.lua
 
 ## Project Structure
 

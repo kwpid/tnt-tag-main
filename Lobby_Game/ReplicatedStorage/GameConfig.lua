@@ -44,6 +44,12 @@ GameConfig.Sounds = {
         NotificationVolume = 0.7,
 }
 
+GameConfig.Rewards = {
+        WinXP = 100,
+        LossXP = 25,
+        KillXP = 10,
+}
+
 GameConfig.Debug = {
         Enabled = true,
         PrintQueueStatus = true,

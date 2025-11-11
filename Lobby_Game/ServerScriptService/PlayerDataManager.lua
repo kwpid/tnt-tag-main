@@ -1,0 +1,216 @@
+local Players = game:GetService("Players")
+local DataStoreService = game:GetService("DataStoreService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+
+local PlayerDataStore = DataStoreService:GetDataStore("PlayerData_v1")
+
+local PlayerDataManager = {}
+PlayerDataManager.__index = PlayerDataManager
+
+local activePlayerData = {}
+
+local DEFAULT_DATA = {
+	Wins = 0,
+	Losses = 0,
+	WinStreak = 0,
+	HighestWinStreak = 0,
+	Level = 1,
+	XP = 0,
+	RankedElo = 1000,
+	RecentMatches = {}
+}
+
+function PlayerDataManager.new()
+	local self = setmetatable({}, PlayerDataManager)
+	self:Initialize()
+	return self
+end
+
+function PlayerDataManager:Initialize()
+	print("[PlayerData] Initializing...")
+	
+	Players.PlayerAdded:Connect(function(player)
+		self:LoadPlayerData(player)
+	end)
+	
+	Players.PlayerRemoving:Connect(function(player)
+		self:SavePlayerData(player)
+	end)
+	
+	game:BindToClose(function()
+		for _, player in ipairs(Players:GetPlayers()) do
+			self:SavePlayerData(player)
+		end
+	end)
+	
+	print("[PlayerData] Initialized successfully!")
+end
+
+function PlayerDataManager:LoadPlayerData(player)
+	local userId = player.UserId
+	local success, data = pcall(function()
+		return PlayerDataStore:GetAsync("Player_" .. userId)
+	end)
+	
+	if success and data then
+		activePlayerData[userId] = data
+		print("[PlayerData] Loaded data for " .. player.Name)
+	else
+		activePlayerData[userId] = self:GetDefaultData()
+		print("[PlayerData] Created new data for " .. player.Name)
+	end
+	
+	self:CreateLeaderstats(player)
+end
+
+function PlayerDataManager:SavePlayerData(player)
+	local userId = player.UserId
+	local data = activePlayerData[userId]
+	
+	if not data then return end
+	
+	local success, err = pcall(function()
+		PlayerDataStore:SetAsync("Player_" .. userId, data)
+	end)
+	
+	if success then
+		print("[PlayerData] Saved data for " .. player.Name)
+	else
+		warn("[PlayerData] Failed to save data for " .. player.Name .. ": " .. tostring(err))
+	end
+	
+	activePlayerData[userId] = nil
+end
+
+function PlayerDataManager:GetDefaultData()
+	local data = {}
+	for key, value in pairs(DEFAULT_DATA) do
+		if typeof(value) == "table" then
+			data[key] = {}
+		else
+			data[key] = value
+		end
+	end
+	return data
+end
+
+function PlayerDataManager:GetPlayerData(player)
+	return activePlayerData[player.UserId]
+end
+
+function PlayerDataManager:CreateLeaderstats(player)
+	local data = self:GetPlayerData(player)
+	if not data then return end
+	
+	local leaderstats = Instance.new("Folder")
+	leaderstats.Name = "leaderstats"
+	leaderstats.Parent = player
+	
+	local wins = Instance.new("IntValue")
+	wins.Name = "Wins"
+	wins.Value = data.Wins
+	wins.Parent = leaderstats
+	
+	local level = Instance.new("IntValue")
+	level.Name = "Level"
+	level.Value = data.Level
+	level.Parent = leaderstats
+	
+	local winStreak = Instance.new("IntValue")
+	winStreak.Name = "Win Streak"
+	winStreak.Value = data.WinStreak
+	winStreak.Parent = leaderstats
+end
+
+function PlayerDataManager:UpdateLeaderstats(player)
+	local data = self:GetPlayerData(player)
+	if not data then return end
+	
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if not leaderstats then return end
+	
+	local wins = leaderstats:FindFirstChild("Wins")
+	if wins then wins.Value = data.Wins end
+	
+	local level = leaderstats:FindFirstChild("Level")
+	if level then level.Value = data.Level end
+	
+	local winStreak = leaderstats:FindFirstChild("Win Streak")
+	if winStreak then winStreak.Value = data.WinStreak end
+end
+
+function PlayerDataManager:AddWin(player)
+	local data = self:GetPlayerData(player)
+	if not data then return end
+	
+	data.Wins = data.Wins + 1
+	data.WinStreak = data.WinStreak + 1
+	
+	if data.WinStreak > data.HighestWinStreak then
+		data.HighestWinStreak = data.WinStreak
+	end
+	
+	self:AddXP(player, GameConfig.Rewards.WinXP)
+	self:UpdateLeaderstats(player)
+	
+	print("[PlayerData] " .. player.Name .. " won! Win streak: " .. data.WinStreak)
+end
+
+function PlayerDataManager:AddLoss(player)
+	local data = self:GetPlayerData(player)
+	if not data then return end
+	
+	data.Losses = data.Losses + 1
+	data.WinStreak = 0
+	
+	self:AddXP(player, GameConfig.Rewards.LossXP)
+	self:UpdateLeaderstats(player)
+	
+	print("[PlayerData] " .. player.Name .. " lost. Win streak reset.")
+end
+
+function PlayerDataManager:AddXP(player, amount)
+	local data = self:GetPlayerData(player)
+	if not data then return end
+	
+	data.XP = data.XP + amount
+	
+	local xpNeeded = self:GetXPForLevel(data.Level)
+	while data.XP >= xpNeeded do
+		data.XP = data.XP - xpNeeded
+		data.Level = data.Level + 1
+		xpNeeded = self:GetXPForLevel(data.Level)
+		print("[PlayerData] " .. player.Name .. " leveled up to level " .. data.Level .. "!")
+	end
+	
+	self:UpdateLeaderstats(player)
+end
+
+function PlayerDataManager:GetXPForLevel(level)
+	return 100 + (level * 50)
+end
+
+function PlayerDataManager:UpdateRankedElo(player, eloChange)
+	local data = self:GetPlayerData(player)
+	if not data then return end
+	
+	data.RankedElo = math.max(0, data.RankedElo + eloChange)
+	print("[PlayerData] " .. player.Name .. " ELO: " .. data.RankedElo .. " (" .. (eloChange >= 0 and "+" or "") .. eloChange .. ")")
+end
+
+function PlayerDataManager:AddRecentMatch(player, matchData)
+	local data = self:GetPlayerData(player)
+	if not data then return end
+	
+	table.insert(data.RecentMatches, 1, matchData)
+	
+	if #data.RecentMatches > 10 then
+		table.remove(data.RecentMatches, #data.RecentMatches)
+	end
+end
+
+local playerDataManager = PlayerDataManager.new()
+
+return playerDataManager

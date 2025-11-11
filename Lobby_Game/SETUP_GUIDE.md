@@ -1,7 +1,7 @@
 # Roblox Queue System - Setup Guide
 
 ## Overview
-Professional matchmaking and queue system for Roblox games with animated UI, region-based matchmaking, and sub-place teleportation.
+Professional matchmaking queue system with player progression, DataStore persistence, and leaderstats.
 
 ## Project Structure
 
@@ -10,14 +10,25 @@ Lobby_Game/
 ├── ReplicatedStorage/
 │   ├── GameConfig.lua          # Main configuration
 │   ├── QueueService.lua        # Queue utilities
+│   ├── PlayerDataService.lua   # Data helpers
 │   └── RemoteEvents.lua        # Client-server events
 │
 ├── ServerScriptService/
-│   ├── InitializeServer.lua    # Server startup
-│   └── QueueManager.lua        # Matchmaking logic
+│   ├── InitializeServer.lua        # Server startup
+│   ├── QueueManager.lua            # Matchmaking logic
+│   ├── PlayerDataManager.lua       # Player data & stats
+│   └── MatchResultReceiver.lua     # Match result processor
 │
 └── StarterPlayer/StarterPlayerScripts/
-    └── QueueUIController.lua   # Client UI controller
+    └── QueueUIController.lua       # Client UI controller
+
+Actual_Game/
+├── ServerScriptService/
+│   ├── GameManager.lua             # Match manager
+│   └── MatchResultHandler.lua      # Result processor
+│
+└── StarterPlayer/StarterPlayerScripts/
+    └── MatchResultClient.lua       # Client result handler
 ```
 
 ## Quick Start
@@ -44,19 +55,43 @@ Create a ScreenGui named "QueueGUI" with:
 
 ### 4. Copy Scripts to Roblox Studio
 
-**ReplicatedStorage:**
-- GameConfig, QueueService, RemoteEvents
+**Lobby_Game - ReplicatedStorage:**
+- GameConfig, QueueService, PlayerDataService, RemoteEvents
 
-**ServerScriptService:**
-- InitializeServer, QueueManager
+**Lobby_Game - ServerScriptService:**
+- InitializeServer, QueueManager, PlayerDataManager, MatchResultReceiver
 
-**StarterPlayer > StarterPlayerScripts:**
+**Lobby_Game - StarterPlayerScripts:**
 - QueueUIController
+
+**Actual_Game - ServerScriptService:**
+- GameManager, MatchResultHandler
+- Copy GameConfig, RemoteEvents, PlayerDataService to ReplicatedStorage
+
+**Actual_Game - StarterPlayerScripts:**
+- MatchResultClient
 
 ### 5. Test
 - Start test server with 2+ players
-- Click QUEUE → Select CASUAL
-- Matchmaking starts automatically
+- Queue for match
+- Complete match in Actual_Game
+- Check stats update in Lobby_Game
+
+## Player Stats & Leaderstats
+
+### Visible on Player List
+- **Wins** - Total wins
+- **Level** - Player level
+- **Win Streak** - Current win streak
+
+### Tracked Data
+- Wins, Losses
+- Win Streak, Highest Win Streak
+- Level, XP
+- Ranked ELO
+- Recent Matches (last 10)
+
+See `PLAYER_DATA_GUIDE.md` for full details.
 
 ## Configuration
 
@@ -68,49 +103,74 @@ MaxQueueTime = 120
 MatchmakingInterval = 5
 ```
 
+### Rewards
+```lua
+GameConfig.Rewards = {
+    WinXP = 100,
+    LossXP = 25,
+    KillXP = 10,
+}
+```
+
 ### UI Settings
 ```lua
 OpenDuration = 0.3
 CameraZoomOffset = 10
 BlurSize = 24
-QueueDotsSpeed = 1.0
 ```
 
 ### Debug Mode
 ```lua
 GameConfig.Debug = {
     Enabled = true,
-    TestMode = true,  -- Skip teleportation
+    TestMode = true,  # Skip teleportation
 }
 ```
 
 ## UI Features
 
 **Queue Button States:**
-- `QUEUE` - Default, click to open menu
-- `^^^^^^` - Menu is open
-- `QUEUING.` / `QUEUING..` / `QUEUING...` - Animated while searching
-- `CANCEL QUEUE` - Shows on hover while queuing
-- `MATCH FOUND!` - Match ready (green)
-- `TELEPORTING...` - Teleporting (yellow)
+- `QUEUE` - Default
+- `^^^^^^` - Menu open
+- `QUEUEING...` - Searching
+- `CANCEL QUEUE` - Hover while queuing (red background)
+- `MATCH FOUND!` - Match ready
+- `TELEPORTING...` - Teleporting
 
 **Animations:**
 - Menu slides from top
 - Background blur effect
-- Camera zoom
+- Camera FOV zoom
 - Smooth transitions
 
-**Interaction:**
-- Click queue button while queuing to cancel
-- Hover shows "CANCEL QUEUE" hint
-- Close button or click queue button again to close menu
+## Match Flow
 
-## Customization
+```
+1. Players queue in Lobby_Game
+2. Match found → Teleport to Actual_Game
+3. GameManager tracks match
+4. Match ends → Results sent to players
+5. Stats updated in Lobby_Game
+6. Players teleport back to lobby
+```
 
-**Colors:** Edit in your UI creation
-**Sounds:** Change IDs in `GameConfig.Sounds`
-**Timings:** Adjust in `GameConfig.UI`
-**Regions:** Modify in `GameConfig.Queue.AvailableRegions`
+## Actual_Game Setup
+
+### Basic Match Example
+```lua
+local GameManager = require(ServerScriptService:WaitForChild("GameManager"))
+
+-- Wait for players to load
+task.wait(5)
+
+-- Your game logic here
+-- Track kills:
+GameManager:RecordKill(killer, victim)
+
+-- End match with winners
+local winners = {player1, player2}
+GameManager:EndGame(winners)
+```
 
 ## Troubleshooting
 
@@ -119,20 +179,19 @@ GameConfig.Debug = {
 - Ensure sub-place is published
 - Set TestMode = true to test without teleporting
 
-**UI not appearing:**
-- Check QueueUIController is in StarterPlayerScripts
-- Verify UI structure matches required hierarchy
-- Check Output for errors
+**Stats not saving:**
+- Check DataStore is enabled in game settings
+- Look for errors in Output
+- Verify PlayerDataManager is initialized
 
-**Matchmaking not working:**
-- Verify MinPlayersPerMatch setting
-- Ensure enough players queuing
-- Check Output for "[QueueManager]" logs
+**Leaderstats not showing:**
+- Ensure PlayerDataManager loads before players join
+- Check InitializeServer runs first
 
 ## Next Steps
 
-1. Set up Actual_Game with game logic
-2. Customize UI colors and styling
-3. Add custom sound effects
-4. Test with real players
-5. Adjust matchmaking times as needed
+1. Build your game logic in Actual_Game
+2. Call `GameManager:EndGame(winners)` when match ends
+3. Customize XP rewards in GameConfig
+4. Add custom sounds and UI styling
+5. Test with real players

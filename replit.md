@@ -1,10 +1,10 @@
 # Roblox Matchmaking Game Project
 
 ## Overview
-A professional Roblox game featuring a queue system with matchmaking, animated UI, and multi-place teleportation. Players queue in the Lobby_Game and get teleported to Actual_Game for matches.
+A professional Roblox game featuring queue system, matchmaking, player progression with DataStore persistence, and multi-place teleportation. Players queue in Lobby_Game, get matched, teleport to Actual_Game for matches, and earn XP/levels/stats.
 
 ## Project Type
-Roblox game development - contains Lua scripts designed to run within Roblox Studio and the Roblox platform.
+Roblox game development - Lua scripts for Roblox Studio.
 
 ## Structure
 
@@ -12,170 +12,204 @@ Roblox game development - contains Lua scripts designed to run within Roblox Stu
 ```
 Lobby_Game/
 ├── ReplicatedStorage/
-│   ├── GameConfig.lua          # Main configuration module
-│   ├── QueueService.lua        # Shared queue utilities
+│   ├── GameConfig.lua          # Configuration (queue, rewards, UI)
+│   ├── QueueService.lua        # Queue utilities
+│   ├── PlayerDataService.lua   # Data helper functions
 │   └── RemoteEvents.lua        # Client-server communication
 │
 ├── ServerScriptService/
-│   ├── InitializeServer.lua    # Server initialization
-│   └── QueueManager.lua        # Matchmaking system
-│
-├── StarterGui/
-│   └── CreateQueueGUI.lua      # UI generation script
+│   ├── InitializeServer.lua        # Server initialization
+│   ├── QueueManager.lua            # Matchmaking system
+│   ├── PlayerDataManager.lua       # Player stats & DataStore
+│   └── MatchResultReceiver.lua     # Receives match results
 │
 └── StarterPlayer/StarterPlayerScripts/
-    └── QueueUIController.lua   # Client UI controller
+    └── QueueUIController.lua       # Client UI controller
 ```
 
 ### Actual_Game (Sub-Place)
-Contains the actual game logic - separate Roblox place for matches.
+```
+Actual_Game/
+├── ServerScriptService/
+│   ├── GameManager.lua             # Match management
+│   ├── MatchResultHandler.lua      # Result processing
+│   └── PVPMain                     # Game logic (empty)
+│
+└── StarterPlayer/StarterPlayerScripts/
+    └── MatchResultClient.lua       # Client result handler
+```
 
 ## Key Features
 
 ### Queue System
 - Region-based matchmaking
-- Configurable player counts (2-10 players)
+- Configurable player counts (2-10)
 - Auto-matching after timeout
-- Debug and test modes
+- Cancel queue functionality
+- Test mode for development
+
+### Player Progression
+- **Stats:** Wins, Losses, Win Streak, Highest Win Streak
+- **Leveling:** Level + XP system with configurable rewards
+- **Ranked:** ELO rating (1000 start)
+- **Match History:** Last 10 matches tracked
+- **DataStore:** Auto-save on leave/shutdown
+
+### Leaderstats (Visible on Player List)
+- Wins
+- Level
+- Win Streak
 
 ### Professional UI
-- Animated queue button with state changes
-- Smooth scale animations (Back easing)
-- Background blur effect (24px)
-- Camera zoom when menu opens
-- Sound effects (hover, click, notifications)
-- Animated "QUEUING..." with cycling dots
+- Slide-in animation from top
+- Background blur (24px)
+- Camera FOV zoom
+- Queue button states with hover effects
+- Red "CANCEL QUEUE" hover indicator
+- Sound effects
 
-### Server-Client Architecture
-- RemoteEvents for communication
-- Centralized state management
-- Error handling and validation
-- Debug logging system
+### Multi-Place System
+- Queue in Lobby_Game
+- Teleport to Actual_Game for matches
+- Results sent back to Lobby_Game
+- Stats updated and saved
+- Auto-teleport back to lobby
 
 ## Configuration
 
-### Critical Settings (GameConfig.lua)
+### GameConfig.lua Settings
 ```lua
-SubPlace.PlaceId = 0  -- ⚠️ MUST BE SET TO ACTUAL PLACE ID
+SubPlace.PlaceId = 0  # SET TO YOUR ACTUAL_GAME ID
 
-Queue Settings:
+Queue:
 - MinPlayersPerMatch: 2
 - MaxPlayersPerMatch: 10
 - MaxQueueTime: 120s
 - MatchmakingInterval: 5s
 
-UI Settings:
+Rewards:
+- WinXP: 100
+- LossXP: 25
+- KillXP: 10
+
+UI:
 - OpenDuration: 0.3s
-- CameraZoomOffset: 10
+- CameraZoomOffset: 10 (FOV)
 - BlurSize: 24
-- QueueDotsSpeed: 0.5s
+
+Debug:
+- TestMode: true (skip teleportation)
 ```
 
-### Debug Mode
-```lua
-GameConfig.Debug = {
-    Enabled = true,
-    TestMode = true,  -- Skips teleportation for testing
-}
-```
-
-## Usage Instructions
+## Usage
 
 ### For Development in Replit
 1. Edit Lua files here
-2. Copy files to Roblox Studio when ready
-3. Test in Roblox Studio with multiple players
+2. Copy to Roblox Studio when ready
+3. Test in Roblox Studio
 
 ### For Roblox Studio Setup
-1. Create sub-place and get Place ID
+1. Create sub-place, get Place ID
 2. Update `GameConfig.SubPlace.PlaceId`
 3. Copy all scripts to appropriate locations
-4. Test with 2+ players
-5. See `SETUP_GUIDE.md` for detailed instructions
+4. Create UI in StarterGui (QueueGUI)
+5. Test with 2+ players
+6. See `SETUP_GUIDE.md` and `PLAYER_DATA_GUIDE.md`
 
 ## Technical Details
 
-### Language & Environment
+### Language & Platform
 - **Language:** Lua (Roblox Luau)
 - **Platform:** Roblox Studio/Engine
 - **Client-Server:** RemoteEvents
-- **UI Framework:** Roblox GUI with TweenService
+- **UI:** TweenService animations
+- **Data:** DataStoreService
 
-### Module Dependencies
-- TweenService (animations)
-- TeleportService (multi-place)
-- Players, ReplicatedStorage (core services)
-- Lighting (blur effect)
-- SoundService (audio)
+### Core Systems
+- **Queue Management:** Server-side matchmaking loops
+- **Player Data:** DataStore with auto-save
+- **Match Results:** Cross-place communication
+- **Leaderstats:** Auto-updated on stat changes
 
 ## Recent Changes
 - **2025-11-11:** Initial GitHub import
-- **2025-11-11:** Created queue system with matchmaking
-- **2025-11-11:** Built animated UI with sounds and effects
-- **2025-11-11:** Implemented teleportation system
-- **2025-11-11:** Added comprehensive configuration system
-- **2025-11-11:** Created setup documentation
+- **2025-11-11:** Queue system with matchmaking
+- **2025-11-11:** Animated UI (slide, blur, FOV zoom)
+- **2025-11-11:** Sound effects and hover interactions
+- **2025-11-11:** Player data system with DataStore
+- **2025-11-11:** Leaderstats (Wins, Level, Win Streak)
+- **2025-11-11:** XP/Level progression system
+- **2025-11-11:** Match result handling across places
+- **2025-11-11:** Cancel queue with red hover indicator
 
 ## User Preferences
-None specified yet.
+None specified.
 
 ## Important Notes
 
-⚠️ **Must Configure:**
-- Set `GameConfig.SubPlace.PlaceId` to your actual sub-place ID
+### Must Configure
+- Set `GameConfig.SubPlace.PlaceId` to Actual_Game ID
 - Publish sub-place before testing teleportation
-- Replace default sound IDs with your own (optional)
+- Enable DataStore in game settings
 
-✅ **Testing:**
+### Testing
 - Use TestMode = true to test without teleportation
-- Requires at least 2 players for matchmaking
-- Check Output window for debug messages
+- Requires 2+ players for matchmaking
+- Check Output for debug messages
+- Verify leaderstats appear on join
+- Test data persistence (leave/rejoin)
 
-🎨 **Customization:**
-- Colors in CreateQueueGUI.lua
-- Timings in GameConfig.lua
-- Sounds in GameConfig.Sounds
-- All thoroughly documented with comments
+### Customization
+- XP rewards in `GameConfig.Rewards`
+- UI timings in `GameConfig.UI`
+- Queue settings in `GameConfig.Queue`
+- Sounds in `GameConfig.Sounds`
 
-## Architecture Notes
+## Architecture
 
 ### Design Patterns
 - Module pattern for shared code
 - Observer pattern for status updates
 - State machine for queue states
-- Event-driven client-server communication
+- Event-driven client-server
+- DataStore abstraction layer
 
 ### Code Quality
-- Comprehensive error handling
-- Extensive inline documentation
-- Configurable debug logging
+- Minimal comments, clean code
+- Error handling and validation
 - Professional naming conventions
 - Separation of concerns
+- Auto-save data management
 
-### Scalability
-- Regional queue organization
-- Efficient matchmaking loops
-- Minimal server-client traffic
-- Easy to extend (ranked mode, parties, etc.)
-
-## Next Steps for User
-1. Get sub-place ID from Roblox Studio
-2. Configure GameConfig.SubPlace.PlaceId
-3. Copy files to Roblox Studio
-4. Add game logic to Actual_Game
-5. Test and iterate
-6. Add custom sounds and styling
+### Data Flow
+```
+Player Join → Load Data → Create Leaderstats
+Queue → Match → Teleport → Play → Results
+Results → Update Stats → Save Data → Return to Lobby
+```
 
 ## Files for Roblox Studio
-All files under `Lobby_Game/` should be copied to the corresponding Roblox Studio locations. See `SETUP_GUIDE.md` for exact placement.
+
+**Lobby_Game:** All scripts in corresponding Roblox locations
+**Actual_Game:** GameManager, result handlers, shared modules
+
+See `SETUP_GUIDE.md` for exact file placement.
 
 ## Main Entry Points
-- **Server:** InitializeServer.lua (auto-loads QueueManager)
-- **Client:** QueueUIController.lua (handles all UI)
-- **Config:** GameConfig.lua (all settings)
+- **Server:** InitializeServer.lua
+- **Client:** QueueUIController.lua
+- **Config:** GameConfig.lua
+- **Data:** PlayerDataManager.lua
 
-## Debug Commands
-All debug output prefixed with module name:
-- `[QueueManager]` - Server matchmaking logs
-- `[QueueUI]` - Client UI logs
-- `[Server]` - Initialization logs
+## Debug Output
+- `[Server]` - Initialization
+- `[QueueManager]` - Matchmaking
+- `[QueueUI]` - Client UI
+- `[PlayerData]` - Data operations
+- `[GameManager]` - Match management
+- `[MatchResultReceiver]` - Result processing
+
+## DataStore
+- **Name:** PlayerData_v1
+- **Key:** Player_{UserId}
+- **Auto-save:** On leave, shutdown, after matches

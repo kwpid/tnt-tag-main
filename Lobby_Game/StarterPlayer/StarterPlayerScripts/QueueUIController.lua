@@ -228,19 +228,16 @@ function QueueUIController:Initialize()
         queueButton.MouseEnter:Connect(function()
                 if self.isQueued then
                         queueButton.Text = "CANCEL QUEUE"
-                        TweenService:Create(queueButton, TweenInfo.new(0.2), {
-                                BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-                        }):Play()
-                        queueButton.MouseLeave:Once(function()
-                                if self.isQueued then
-                                        self:UpdateQueueButtonText()
-                                        TweenService:Create(queueButton, TweenInfo.new(0.2), {
-                                                BackgroundColor3 = self.originalButtonColor
-                                        }):Play()
-                                end
-                        end)
+                        queueButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
                 else
                         self:PlaySound("Hover")
+                end
+        end)
+        
+        queueButton.MouseLeave:Connect(function()
+                if self.isQueued then
+                        self:UpdateQueueButtonText()
+                        queueButton.BackgroundColor3 = self.originalButtonColor
                 end
         end)
         

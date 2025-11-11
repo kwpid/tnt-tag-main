@@ -10,40 +10,59 @@ local roundTimerLabel = mainGUI:WaitForChild("RoundTimer")
 
 local roundActive = false
 local roundTimeRemaining = 0
+local intermissionThread = nil
 
 local function updateRoundTimer()
-	if roundActive and roundTimeRemaining > 0 then
-		roundTimerLabel.Text = "Round: " .. math.ceil(roundTimeRemaining) .. "s"
-		roundTimerLabel.Visible = true
-	else
-		roundTimerLabel.Visible = false
-	end
+        if roundActive and roundTimeRemaining > 0 then
+                roundTimerLabel.Text = "Round: " .. math.ceil(roundTimeRemaining) .. "s"
+                roundTimerLabel.Visible = true
+        else
+                roundTimerLabel.Visible = false
+        end
 end
 
 RemoteEvents.RoundStart.OnClientEvent:Connect(function(roundTime)
-	print("[RoundUI] Round started! Time: " .. roundTime .. "s")
-	roundActive = true
-	roundTimeRemaining = roundTime
-	
-	task.spawn(function()
-		while roundActive and roundTimeRemaining > 0 do
-			updateRoundTimer()
-			task.wait(0.1)
-			roundTimeRemaining = roundTimeRemaining - 0.1
-		end
-		updateRoundTimer()
-	end)
+        print("[RoundUI] Round started! Time: " .. roundTime .. "s")
+        
+        if intermissionThread then
+                task.cancel(intermissionThread)
+                intermissionThread = nil
+        end
+        
+        roundActive = true
+        roundTimeRemaining = roundTime
+        
+        task.spawn(function()
+                while roundActive and roundTimeRemaining > 0 do
+                        updateRoundTimer()
+                        task.wait(0.1)
+                        roundTimeRemaining = roundTimeRemaining - 0.1
+                end
+                
+                if roundActive then
+                        updateRoundTimer()
+                end
+        end)
 end)
 
 RemoteEvents.RoundEnd.OnClientEvent:Connect(function()
-	print("[RoundUI] Round ended!")
-	roundActive = false
-	roundTimeRemaining = 0
-	roundTimerLabel.Text = "Intermission..."
-	roundTimerLabel.Visible = true
-	
-	task.wait(5)
-	roundTimerLabel.Visible = false
+        print("[RoundUI] Round ended!")
+        roundActive = false
+        roundTimeRemaining = 0
+        roundTimerLabel.Text = "Intermission..."
+        roundTimerLabel.Visible = true
+        
+        if intermissionThread then
+                task.cancel(intermissionThread)
+        end
+        
+        intermissionThread = task.spawn(function()
+                task.wait(5)
+                if not roundActive then
+                        roundTimerLabel.Visible = false
+                end
+                intermissionThread = nil
+        end)
 end)
 
 roundTimerLabel.Visible = false

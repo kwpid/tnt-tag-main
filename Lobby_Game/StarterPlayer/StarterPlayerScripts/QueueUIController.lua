@@ -148,20 +148,14 @@ function QueueUIController:CloseUI()
 end
 
 function QueueUIController:ZoomCamera(zoomIn)
-        local character = player.Character
-        if not character then return end
-        
-        local humanoid = character:FindFirstChild("Humanoid")
-        if not humanoid then return end
-        
         if zoomIn then
-                self.originalCameraZoom = humanoid.CameraOffset.Z
-                TweenService:Create(humanoid, TweenInfo.new(GameConfig.UI.CameraTransitionTime), {
-                        CameraOffset = Vector3.new(0, 0, GameConfig.UI.CameraZoomOffset)
+                self.originalCameraZoom = camera.FieldOfView
+                TweenService:Create(camera, TweenInfo.new(GameConfig.UI.CameraTransitionTime), {
+                        FieldOfView = self.originalCameraZoom - GameConfig.UI.CameraZoomOffset
                 }):Play()
         else
-                TweenService:Create(humanoid, TweenInfo.new(GameConfig.UI.CameraTransitionTime), {
-                        CameraOffset = Vector3.new(0, 0, self.originalCameraZoom)
+                TweenService:Create(camera, TweenInfo.new(GameConfig.UI.CameraTransitionTime), {
+                        FieldOfView = self.originalCameraZoom
                 }):Play()
         end
 end
@@ -180,13 +174,10 @@ function QueueUIController:UpdateQueueButtonText()
                 queueButton.Text = "QUEUEING..."
         elseif self.currentStatus == QueueService.QueueStatus.MatchFound then
                 queueButton.Text = "MATCH FOUND!"
-                queueButton.BackgroundColor3 = Color3.fromRGB(50, 255, 50)
         elseif self.currentStatus == QueueService.QueueStatus.Teleporting then
                 queueButton.Text = "TELEPORTING..."
-                queueButton.BackgroundColor3 = Color3.fromRGB(255, 200, 50)
         else
                 queueButton.Text = "QUEUE"
-                queueButton.BackgroundColor3 = Color3.fromRGB(50, 150, 255)
         end
 end
 

@@ -220,13 +220,20 @@ function QueueUIController:Initialize()
         self:AddHoverEffect(casualButton, Color3.fromRGB(70, 220, 120), Color3.fromRGB(50, 200, 100))
         self:AddHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
         
+        local originalButtonColor = queueButton.BackgroundColor3
+        
         queueButton.MouseEnter:Connect(function()
                 if self.isQueued then
-                        local originalText = queueButton.Text
                         queueButton.Text = "CANCEL QUEUE"
+                        TweenService:Create(queueButton, TweenInfo.new(0.2), {
+                                BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+                        }):Play()
                         queueButton.MouseLeave:Once(function()
                                 if self.isQueued then
                                         self:UpdateQueueButtonText()
+                                        TweenService:Create(queueButton, TweenInfo.new(0.2), {
+                                                BackgroundColor3 = originalButtonColor
+                                        }):Play()
                                 end
                         end)
                 else

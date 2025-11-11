@@ -1,0 +1,20 @@
+# Lua
+*.luac
+*.out
+*.o
+*.so
+*.dll
+*.dylib
+
+# Replit
+.cache/
+.config/
+.upm/
+.breakpoints
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

@@ -25,6 +25,7 @@ local QueueUIController = {
         isQueued = false,
         currentStatus = QueueService.QueueStatus.NotQueued,
         originalCameraZoom = 0,
+        originalButtonColor = nil,
         blur = nil,
         sounds = {}
 }
@@ -206,6 +207,8 @@ function QueueUIController:LeaveQueue()
         self:StopDotAnimation()
         self:UpdateQueueButtonText()
         
+        queueButton.BackgroundColor3 = self.originalButtonColor
+        
         RemoteEvents.QueueLeave:FireServer()
         
         print("[QueueUI] Left queue")
@@ -220,7 +223,7 @@ function QueueUIController:Initialize()
         self:AddHoverEffect(casualButton, Color3.fromRGB(70, 220, 120), Color3.fromRGB(50, 200, 100))
         self:AddHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
         
-        local originalButtonColor = queueButton.BackgroundColor3
+        self.originalButtonColor = queueButton.BackgroundColor3
         
         queueButton.MouseEnter:Connect(function()
                 if self.isQueued then
@@ -232,7 +235,7 @@ function QueueUIController:Initialize()
                                 if self.isQueued then
                                         self:UpdateQueueButtonText()
                                         TweenService:Create(queueButton, TweenInfo.new(0.2), {
-                                                BackgroundColor3 = originalButtonColor
+                                                BackgroundColor3 = self.originalButtonColor
                                         }):Play()
                                 end
                         end)

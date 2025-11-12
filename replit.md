@@ -205,6 +205,13 @@ Debug:
 - **2025-11-12:** Refactored PVP system to use PVPServer.lua and PVPClient.lua
 - **2025-11-12:** Fixed round timing - StartRound() is now non-blocking for better game flow
 - **2025-11-12:** Removed duplicate InitializeAlivePlayers() calls to prevent dead players from resurrecting
+- **2025-11-12:** Added 10s TNT delay for first round only (allows players to spread out before TNT is given)
+- **2025-11-12:** Fixed UI timing issues - countdowns now show accurate time (0s instead of stopping at 2s)
+- **2025-11-12:** Fixed late-joining players not seeing intermission UI - now receives remaining time
+- **2025-11-12:** Reduced intermission between rounds to 3s (from 5s) for better pacing
+- **2025-11-12:** Fixed intermission UI to dynamically show correct countdown between rounds
+- **2025-11-12:** TNT assignment now re-selects from alive players after delay to prevent assignment failures
+- **2025-11-12:** Synchronized reward values (WinXP, LossXP, KillXP) between Lobby and Actual game configs
 
 ## User Preferences
 None specified.

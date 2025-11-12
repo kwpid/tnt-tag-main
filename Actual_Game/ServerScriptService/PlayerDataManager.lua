@@ -62,6 +62,13 @@ function PlayerDataManager:LoadPlayerData(player)
         end)
         
         if success and data then
+                local defaultData = self:GetDefaultData()
+                for key, value in pairs(defaultData) do
+                        if data[key] == nil then
+                                data[key] = value
+                                print("[PlayerData] Added missing field '" .. key .. "' for " .. player.Name)
+                        end
+                end
                 activePlayerData[userId] = data
                 print("[PlayerData] Loaded data for " .. player.Name)
         else

@@ -14,6 +14,7 @@ local currentIT = nil
 local roundActive = false
 local alivePlayers = {}
 local hitCooldowns = {}
+local roundNumber = 0
 
 function PVPServer.new(gameManager)
         local self = setmetatable({}, PVPServer)
@@ -162,7 +163,8 @@ end
 
 function PVPServer:StartRound()
         roundActive = true
-        print("[PVPServer] Round starting...")
+        roundNumber = roundNumber + 1
+        print("[PVPServer] Round " .. roundNumber .. " starting...")
         
         local alivelist = {}
         for userId, _ in pairs(alivePlayers) do
@@ -178,12 +180,34 @@ function PVPServer:StartRound()
                 return
         end
         
-        local randomPlayer = alivelist[math.random(1, #alivelist)]
-        self:GiveTNT(randomPlayer)
+        local tntDelay = 0
+        if roundNumber == 1 then
+                tntDelay = GameConfig.Game.FirstRoundDelay
+                print("[PVPServer] First round! TNT will be given in " .. tntDelay .. "s")
+        end
         
-        RemoteEvents.RoundStart:FireAllClients(GameConfig.Game.RoundTime)
+        RemoteEvents.RoundStart:FireAllClients(GameConfig.Game.RoundTime, tntDelay)
         
-        task.delay(GameConfig.Game.RoundTime, function()
+        task.delay(tntDelay, function()
+                if not roundActive then return end
+                
+                local currentAlive = {}
+                for userId, _ in pairs(alivePlayers) do
+                        local player = Players:GetPlayerByUserId(userId)
+                        if player and player.Parent then
+                                table.insert(currentAlive, player)
+                        end
+                end
+                
+                if #currentAlive > 0 then
+                        local randomPlayer = currentAlive[math.random(1, #currentAlive)]
+                        self:GiveTNT(randomPlayer)
+                else
+                        warn("[PVPServer] No alive players to give TNT to!")
+                end
+        end)
+        
+        task.delay(GameConfig.Game.RoundTime + tntDelay, function()
                 if roundActive then
                         self:ExplodeTNT()
                 end
@@ -207,7 +231,7 @@ function PVPServer:ExplodeTNT()
                 currentIT = nil
         end
         
-        RemoteEvents.RoundEnd:FireAllClients()
+        RemoteEvents.RoundEnd:FireAllClients(GameConfig.Game.IntermissionTime)
 end
 
 function PVPServer:KillPlayer(player)
@@ -252,6 +276,7 @@ function PVPServer:Reset()
         currentIT = nil
         alivePlayers = {}
         hitCooldowns = {}
+        roundNumber = 0
 end
 
 return PVPServer

@@ -17,6 +17,8 @@ local gameActive = false
 local cleanupInProgress = false
 local currentMap = nil
 local countdownThread = nil
+local intermissionStartTime = 0
+local intermissionDuration = 0
 
 function GameManager.new()
         local self = setmetatable({}, GameManager)
@@ -60,6 +62,15 @@ function GameManager:OnPlayerJoin(player)
         
         player.Team = Teams.Lobby
         
+        if intermissionStartTime > 0 and not gameActive then
+                local elapsed = tick() - intermissionStartTime
+                local remaining = intermissionDuration - elapsed
+                if remaining > 0 then
+                        print("[GameManager] Sending intermission UI to late-joiner " .. player.Name .. " (" .. math.ceil(remaining) .. "s remaining)")
+                        RemoteEvents.GameStartIntermission:FireClient(player, remaining)
+                end
+        end
+        
         self:CheckStartGame()
 end
 
@@ -80,10 +91,14 @@ function GameManager:CheckStartGame()
                 end
                 
                 print("[GameManager] Map loaded! Starting " .. GameConfig.Game.StartIntermissionTime .. "s intermission...")
+                intermissionStartTime = tick()
+                intermissionDuration = GameConfig.Game.StartIntermissionTime
                 RemoteEvents.GameStartIntermission:FireAllClients(GameConfig.Game.StartIntermissionTime)
                 
                 countdownThread = task.spawn(function()
                         task.wait(GameConfig.Game.StartIntermissionTime)
+                        intermissionStartTime = 0
+                        intermissionDuration = 0
                         
                         local currentLobbyCount = #Teams.Lobby:GetPlayers()
                         if currentLobbyCount < 2 then
@@ -222,6 +237,8 @@ function GameManager:StartGame()
         
         print("[GameManager] Starting rounds with " .. playerCount .. " players!")
         
+        local isFirstRound = true
+        
         while gameActive do
                 local aliveCount = self.PVP:GetAliveCount()
                 
@@ -234,7 +251,17 @@ function GameManager:StartGame()
                 print("[GameManager] Starting round with " .. aliveCount .. " players")
                 self.PVP:StartRound()
                 
-                task.wait(GameConfig.Game.RoundTime + GameConfig.Game.IntermissionTime)
+                local roundDuration = GameConfig.Game.RoundTime
+                if isFirstRound then
+                        roundDuration = roundDuration + GameConfig.Game.FirstRoundDelay
+                        isFirstRound = false
+                end
+                
+                task.wait(roundDuration)
+                
+                if gameActive then
+                        task.wait(GameConfig.Game.IntermissionTime)
+                end
         end
 end
 

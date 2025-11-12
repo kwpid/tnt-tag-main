@@ -10,7 +10,7 @@ GameConfig.LobbyPlaceId = 76587714865691
 GameConfig.Game = {
         MaxPlayers = 25,
         RoundTime = 45,
-        IntermissionTime = 5,
+        IntermissionTime = 3,
         EndGameWaitTime = 30,
         FirstRoundDelay = 10,
         StartIntermissionTime = 15,
@@ -33,7 +33,8 @@ GameConfig.PVP = {
 
 GameConfig.Rewards = {
         WinXP = 150,
-        SurvivalXP = 50,
+        LossXP = 50,
+        KillXP = 10,
 }
 
 GameConfig.Debug = {

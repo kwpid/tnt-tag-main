@@ -223,6 +223,9 @@ None specified.
 - Check Output for debug messages
 - Verify leaderstats appear on join
 - Test data persistence (leave/rejoin)
+- **IMPORTANT:** Enable API Services in Game Settings > Security for DataStore to work
+- **IMPORTANT:** Set `GameConfig.SubPlace.PlaceId` in Lobby_Game to your Actual_Game Place ID for teleportation to work
+- Stats only update when players return to lobby (via TeleportData)
 
 ### Customization
 - XP rewards in `GameConfig.Rewards`

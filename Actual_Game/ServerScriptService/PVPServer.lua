@@ -164,8 +164,6 @@ function PVPServer:StartRound()
         roundActive = true
         print("[PVPServer] Round starting...")
         
-        self:InitializeAlivePlayers()
-        
         local alivelist = {}
         for userId, _ in pairs(alivePlayers) do
                 local player = Players:GetPlayerByUserId(userId)
@@ -176,6 +174,7 @@ function PVPServer:StartRound()
         
         if #alivelist == 0 then
                 print("[PVPServer] No alive players")
+                roundActive = false
                 return
         end
         
@@ -184,9 +183,11 @@ function PVPServer:StartRound()
         
         RemoteEvents.RoundStart:FireAllClients(GameConfig.Game.RoundTime)
         
-        task.wait(GameConfig.Game.RoundTime)
-        
-        self:ExplodeTNT()
+        task.delay(GameConfig.Game.RoundTime, function()
+                if roundActive then
+                        self:ExplodeTNT()
+                end
+        end)
 end
 
 function PVPServer:ExplodeTNT()

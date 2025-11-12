@@ -37,7 +37,7 @@ Actual_Game/
 │
 ├── ServerScriptService/
 │   ├── GameManager.lua             # TNT Tag match management
-│   ├── PVPMain.lua                 # TNT Tag game logic (server-side hit effects)
+│   ├── PVPServer.lua               # TNT Tag game logic (server-side hit effects)
 │   ├── PlayerDataManager.lua       # Player data loading & leaderstats
 │   └── MatchResultHandler.lua      # Result processing
 │
@@ -202,6 +202,9 @@ Debug:
 - **2025-11-12:** Added "Returning to lobby in [X]s" countdown display after match ends
 - **2025-11-12:** Ensured 1v1 TNT explosion only kills the holder, not both players
 - **2025-11-12:** Added proper UI cleanup on teleport and countdown completion
+- **2025-11-12:** Refactored PVP system to use PVPServer.lua and PVPClient.lua
+- **2025-11-12:** Fixed round timing - StartRound() is now non-blocking for better game flow
+- **2025-11-12:** Removed duplicate InitializeAlivePlayers() calls to prevent dead players from resurrecting
 
 ## User Preferences
 None specified.
@@ -267,7 +270,7 @@ See `SETUP_GUIDE.md` for exact file placement.
 
 ### Actual_Game (TNT Tag)
 - **Server:** GameManager.lua
-- **Game Logic:** PVPMain.lua
+- **Game Logic:** PVPServer.lua
 - **Config:** GameConfig.lua (Actual_Game)
 - **Client:** PVPClient.lua, GhostSystem.lua
 

@@ -234,7 +234,7 @@ function GameManager:StartGame()
                 print("[GameManager] Starting round with " .. aliveCount .. " players")
                 self.PVP:StartRound()
                 
-                task.wait(GameConfig.Game.IntermissionTime)
+                task.wait(GameConfig.Game.RoundTime + GameConfig.Game.IntermissionTime)
         end
 end
 

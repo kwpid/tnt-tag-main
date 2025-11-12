@@ -2,6 +2,8 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local RemoteEvents = require(ReplicatedStorage:WaitForChild("RemoteEvents"))
+local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local TimeSync = require(ReplicatedStorage:WaitForChild("TimeSync"))
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -14,8 +16,10 @@ local tntDelayEndTime = 0
 local roundThread = nil
 local intermissionThread = nil
 
-RemoteEvents.RoundStart.OnClientEvent:Connect(function(roundTime, tntDelay, serverExplosionTime)
-        print("[RoundUI] Round started! Time: " .. roundTime .. "s, TNT Delay: " .. (tntDelay or 0) .. "s")
+RemoteEvents.RoundStart.OnClientEvent:Connect(function(serverExplosionTime, tntDelay)
+        print("[RoundUI] Round started! Explosion at: " .. serverExplosionTime .. ", TNT Delay: " .. (tntDelay or 0) .. "s")
+        
+        TimeSync.WaitForSync()
         
         if intermissionThread then
                 task.cancel(intermissionThread)
@@ -27,21 +31,18 @@ RemoteEvents.RoundStart.OnClientEvent:Connect(function(roundTime, tntDelay, serv
         end
         
         roundActive = true
-        local currentTime = tick()
         local delayTime = tntDelay or 0
-        local serverRoundStartTime = serverExplosionTime - delayTime - roundTime
-        local elapsed = currentTime - serverRoundStartTime
-        
-        local remainingDelay = math.max(0, delayTime - elapsed)
-        local remainingRound = math.max(0, delayTime + roundTime - elapsed)
-        
-        tntDelayEndTime = currentTime + remainingDelay
-        roundEndTime = currentTime + remainingRound
+        local serverRoundEndTime = serverExplosionTime
+        local serverTntDelayEndTime = serverExplosionTime - GameConfig.Game.RoundTime
         
         roundThread = task.spawn(function()
                 while roundActive do
-                        local timeLeft = math.max(0, roundEndTime - tick())
-                        local delayLeft = math.max(0, tntDelayEndTime - tick())
+                        roundEndTime = TimeSync.ServerToClientTime(serverRoundEndTime)
+                        tntDelayEndTime = TimeSync.ServerToClientTime(serverTntDelayEndTime)
+                        
+                        local currentTime = tick()
+                        local timeLeft = math.max(0, roundEndTime - currentTime)
+                        local delayLeft = math.max(0, tntDelayEndTime - currentTime)
                         
                         if delayLeft > 1 then
                                 roundTimerLabel.Text = "Round starts in: " .. math.ceil(delayLeft) .. "s"

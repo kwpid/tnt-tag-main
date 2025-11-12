@@ -33,13 +33,15 @@ Actual_Game/
 ├── ReplicatedStorage/
 │   ├── GameConfig.lua              # TNT Tag game configuration (with DataStore version)
 │   ├── RemoteEvents.lua            # Client-server events
-│   └── PlayerDataService.lua       # Data helper functions
+│   ├── PlayerDataService.lua       # Data helper functions
+│   └── TimeSync.lua                # RTT-based time synchronization
 │
 ├── ServerScriptService/
 │   ├── GameManager.lua             # TNT Tag match management
 │   ├── PVPServer.lua               # TNT Tag game logic (server-side hit effects)
 │   ├── PlayerDataManager.lua       # Player data loading & leaderstats
-│   └── MatchResultHandler.lua      # Result processing
+│   ├── MatchResultHandler.lua      # Result processing
+│   └── TimeSyncServer.lua          # Time sync RemoteFunction handler
 │
 ├── StarterPlayer/StarterPlayerScripts/
 │   ├── MatchResultClient.lua       # Client result handler
@@ -60,7 +62,8 @@ Actual_Game/
 ### TNT Tag Gameplay
 - **Game Mode:** Elimination-style TNT Tag
 - **Max Players:** 25 per server
-- **Round Timer:** 45 seconds until TNT explodes (displayed on-screen)
+- **Round Timer:** 45 seconds until TNT explodes (synchronized countdown)
+- **Time Sync:** RTT-based client-server clock synchronization for accurate timers
 - **PVP System:** Click to hit players (arm swing animation, knockback, red highlight)
 - **TNT Transfer:** Hit other players to pass the TNT
 - **TNT Indicator:** On-screen warning when you have TNT
@@ -158,6 +161,7 @@ Debug:
 - **Player Data:** DataStore with auto-save
 - **Match Results:** Cross-place communication
 - **Leaderstats:** Auto-updated on stat changes
+- **Time Sync:** RTT-based clock offset measurement for synchronized countdowns
 
 ## Recent Changes
 - **2025-11-11:** Initial GitHub import
@@ -212,6 +216,11 @@ Debug:
 - **2025-11-12:** Fixed intermission UI to dynamically show correct countdown between rounds
 - **2025-11-12:** TNT assignment now re-selects from alive players after delay to prevent assignment failures
 - **2025-11-12:** Synchronized reward values (WinXP, LossXP, KillXP) between Lobby and Actual game configs
+- **2025-11-12:** Implemented RTT-based time synchronization (TimeSync module) for accurate countdown timers
+- **2025-11-12:** Server now uses workspace:GetServerTimeNow() for authoritative timestamps
+- **2025-11-12:** Client measures network latency and syncs clock offset every 10 seconds
+- **2025-11-12:** Round countdown now recomputes with latest offset each frame for automatic correction
+- **2025-11-12:** Added "Round ending soon..." message in final 5 seconds before TNT explodes
 
 ## User Preferences
 None specified.

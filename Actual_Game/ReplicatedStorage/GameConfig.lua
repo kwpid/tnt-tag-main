@@ -18,11 +18,12 @@ GameConfig.TNT = {
 }
 
 GameConfig.PVP = {
-        HitCooldown = 0.5,
+        HitCooldown = 0.3,
         KnockbackPower = 50,
         HighlightColor = Color3.fromRGB(255, 100, 100),
         HighlightDuration = 0.3,
         HitRange = 10,
+        HitSoundId = "rbxassetid://8595980577",
 }
 
 GameConfig.Rewards = {

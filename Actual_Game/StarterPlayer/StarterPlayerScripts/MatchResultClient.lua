@@ -11,8 +11,6 @@ RemoteEvents.MatchResult.OnClientEvent:Connect(function(isWinner, kills, deaths)
         print("  Result: " .. (isWinner and "VICTORY" or "DEFEAT"))
         print("  K/D: " .. kills .. "/" .. deaths)
         
-        RemoteEvents.MatchResultReceived:FireServer(isWinner, kills, deaths)
-        
         task.wait(2)
         
         local playerGui = player:WaitForChild("PlayerGui")

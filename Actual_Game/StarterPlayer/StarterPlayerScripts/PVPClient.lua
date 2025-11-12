@@ -14,6 +14,7 @@ local lastHitTime = 0
 local currentHighlight = nil
 local armSwingAnimation = nil
 local armSwingTrack = nil
+local hitSound = nil
 
 local function getCharacterFromMouse()
         local ray = camera:ScreenPointToRay(mouse.X, mouse.Y)
@@ -54,11 +55,24 @@ local function loadArmSwingAnimation()
         else
                 warn("[PVPClient] Animations folder not found in ReplicatedStorage")
         end
+        
+        if not hitSound then
+                hitSound = Instance.new("Sound")
+                hitSound.SoundId = GameConfig.PVP.HitSoundId
+                hitSound.Volume = 0.5
+                hitSound.Parent = character:WaitForChild("Head")
+        end
 end
 
 local function playArmSwing()
         if armSwingTrack then
                 armSwingTrack:Play()
+        end
+end
+
+local function playHitSound()
+        if hitSound then
+                hitSound:Play()
         end
 end
 
@@ -87,35 +101,45 @@ local function highlightCharacter(character)
         end)
 end
 
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-        if gameProcessed then return end
+local function handleHit()
+        if tick() - lastHitTime < GameConfig.PVP.HitCooldown then
+                return
+        end
         
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                if tick() - lastHitTime < GameConfig.PVP.HitCooldown then
-                        return
-                end
+        local targetPlayer, targetCharacter = getCharacterFromMouse()
+        
+        if targetPlayer and targetCharacter then
+                local myCharacter = player.Character
+                if not myCharacter then return end
                 
-                local targetPlayer, targetCharacter = getCharacterFromMouse()
+                local myHRP = myCharacter:FindFirstChild("HumanoidRootPart")
+                local targetHRP = targetCharacter:FindFirstChild("HumanoidRootPart")
                 
-                if targetPlayer and targetCharacter then
-                        local myCharacter = player.Character
-                        if not myCharacter then return end
+                if myHRP and targetHRP then
+                        local distance = (myHRP.Position - targetHRP.Position).Magnitude
                         
-                        local myHRP = myCharacter:FindFirstChild("HumanoidRootPart")
-                        local targetHRP = targetCharacter:FindFirstChild("HumanoidRootPart")
-                        
-                        if myHRP and targetHRP then
-                                local distance = (myHRP.Position - targetHRP.Position).Magnitude
-                                
-                                if distance <= GameConfig.PVP.HitRange then
-                                        RemoteEvents.PlayerHit:FireServer(targetPlayer)
-                                        highlightCharacter(targetCharacter)
-                                        playArmSwing()
-                                        lastHitTime = tick()
-                                end
+                        if distance <= GameConfig.PVP.HitRange then
+                                RemoteEvents.PlayerHit:FireServer(targetPlayer)
+                                highlightCharacter(targetCharacter)
+                                playArmSwing()
+                                playHitSound()
+                                lastHitTime = tick()
                         end
                 end
         end
+end
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+        
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                handleHit()
+        end
+end)
+
+UserInputService.TouchTap:Connect(function(touchPositions, gameProcessed)
+        if gameProcessed then return end
+        handleHit()
 end)
 
 RemoteEvents.TNTTransfer.OnClientEvent:Connect(function(newIT)

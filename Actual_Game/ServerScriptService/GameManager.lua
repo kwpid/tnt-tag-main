@@ -71,14 +71,26 @@ function GameManager:CheckStartGame()
         print("[GameManager] Lobby has " .. lobbyPlayerCount .. " players")
         
         if lobbyPlayerCount >= 2 then
-                print("[GameManager] Enough players joined! Starting countdown: " .. GameConfig.Game.FirstRoundDelay .. " seconds...")
+                print("[GameManager] Enough players joined! Loading map and starting intermission...")
+                
+                if not self:LoadMap() then
+                        warn("[GameManager] Failed to load map, aborting game start")
+                        return
+                end
+                
+                print("[GameManager] Map loaded! Starting " .. GameConfig.Game.StartIntermissionTime .. "s intermission...")
+                RemoteEvents.GameStartIntermission:FireAllClients(GameConfig.Game.StartIntermissionTime)
                 
                 countdownThread = task.spawn(function()
-                        task.wait(GameConfig.Game.FirstRoundDelay)
+                        task.wait(GameConfig.Game.StartIntermissionTime)
                         
                         local currentLobbyCount = #Teams.Lobby:GetPlayers()
                         if currentLobbyCount < 2 then
-                                warn("[GameManager] Not enough players remained during countdown (have " .. currentLobbyCount .. "), aborting...")
+                                warn("[GameManager] Not enough players remained during intermission (have " .. currentLobbyCount .. "), aborting...")
+                                if currentMap then
+                                        currentMap:Destroy()
+                                        currentMap = nil
+                                end
                                 countdownThread = nil
                                 return
                         end
@@ -159,8 +171,8 @@ function GameManager:StartGame()
         print("[GameManager] ========================================")
         gameActive = true
         
-        if not self:LoadMap() then
-                warn("[GameManager] Failed to load map, aborting game")
+        if not currentMap then
+                warn("[GameManager] Map not loaded, aborting game")
                 gameActive = false
                 self:EndGame(nil)
                 return
@@ -207,9 +219,7 @@ function GameManager:StartGame()
                 return
         end
         
-        print("[GameManager] Starting " .. GameConfig.Game.StartIntermissionTime .. "s intermission before first round...")
-        RemoteEvents.GameStartIntermission:FireAllClients(GameConfig.Game.StartIntermissionTime)
-        task.wait(GameConfig.Game.StartIntermissionTime)
+        print("[GameManager] Starting rounds with " .. playerCount .. " players!")
         
         while gameActive do
                 local aliveCount = self.PVP:GetAliveCount()
@@ -252,9 +262,10 @@ function GameManager:EndGame(winner)
         for userId, playerData in pairs(activePlayers) do
                 local player = playerData.Player
                 if player and player.Parent and player.Team == Teams.Game then
+                        local isWinner = (player == winner)
                         print("[GameManager] Teleporting " .. player.Name .. " back to lobby")
                         player.Team = Teams.Lobby
-                        self:TeleportToLobby(player)
+                        self:TeleportToLobby(player, isWinner, playerData.Deaths)
                 end
         end
         
@@ -268,11 +279,25 @@ function GameManager:EndGame(winner)
         self:CheckStartGame()
 end
 
-function GameManager:TeleportToLobby(player)
+function GameManager:TeleportToLobby(player, isWinner, deaths)
         local lobbyPlaceId = GameConfig.LobbyPlaceId or game.PlaceId
         
+        local teleportOptions = Instance.new("TeleportOptions")
+        teleportOptions.ShouldReserveServer = false
+        
+        if isWinner ~= nil then
+                local matchData = {
+                        isWinner = isWinner,
+                        kills = 0,
+                        deaths = deaths or 0,
+                        mode = "Casual"
+                }
+                teleportOptions:SetTeleportData(matchData)
+                print("[GameManager] Sending match data: Win=" .. tostring(isWinner) .. ", Deaths=" .. (deaths or 0))
+        end
+        
         local success, err = pcall(function()
-                TeleportService:Teleport(lobbyPlaceId, player)
+                TeleportService:TeleportAsync(lobbyPlaceId, {player}, teleportOptions)
         end)
         
         if not success then

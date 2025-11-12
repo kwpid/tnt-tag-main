@@ -9,27 +9,12 @@ local mainGUI = playerGui:WaitForChild("MainGUI")
 local roundTimerLabel = mainGUI:WaitForChild("RoundTimer")
 
 local roundActive = false
-local roundTimeRemaining = 0
-local tntDelayRemaining = 0
+local roundEndTime = 0
+local tntDelayEndTime = 0
+local roundThread = nil
 local intermissionThread = nil
 
-local function updateRoundTimer()
-        if not roundActive then
-                return
-        end
-        
-        if tntDelayRemaining > 0 then
-                roundTimerLabel.Text = "Round starts in: " .. math.floor(tntDelayRemaining + 0.99) .. "s"
-                roundTimerLabel.Visible = true
-        elseif roundTimeRemaining > 0 then
-                roundTimerLabel.Text = "Round: " .. math.floor(roundTimeRemaining + 0.99) .. "s"
-                roundTimerLabel.Visible = true
-        else
-                roundTimerLabel.Visible = false
-        end
-end
-
-RemoteEvents.RoundStart.OnClientEvent:Connect(function(roundTime, tntDelay)
+RemoteEvents.RoundStart.OnClientEvent:Connect(function(roundTime, tntDelay, serverExplosionTime)
         print("[RoundUI] Round started! Time: " .. roundTime .. "s, TNT Delay: " .. (tntDelay or 0) .. "s")
         
         if intermissionThread then
@@ -37,59 +22,61 @@ RemoteEvents.RoundStart.OnClientEvent:Connect(function(roundTime, tntDelay)
                 intermissionThread = nil
         end
         
-        roundActive = true
-        roundTimeRemaining = roundTime
-        tntDelayRemaining = tntDelay or 0
+        if roundThread then
+                task.cancel(roundThread)
+        end
         
-        task.spawn(function()
-                while roundActive and tntDelayRemaining > 0 do
-                        updateRoundTimer()
-                        task.wait(0.1)
-                        tntDelayRemaining = tntDelayRemaining - 0.1
-                end
-                
-                tntDelayRemaining = 0
-                
-                while roundActive and roundTimeRemaining > 0 do
-                        updateRoundTimer()
-                        task.wait(0.1)
-                        roundTimeRemaining = roundTimeRemaining - 0.1
-                end
-                
-                if roundActive then
-                        roundTimerLabel.Text = "Round: 0s"
-                        roundTimerLabel.Visible = true
-                        task.wait(0.5)
-                        roundTimerLabel.Visible = false
+        roundActive = true
+        local currentTime = tick()
+        local delayTime = tntDelay or 0
+        local serverRoundStartTime = serverExplosionTime - delayTime - roundTime
+        local elapsed = currentTime - serverRoundStartTime
+        
+        local remainingDelay = math.max(0, delayTime - elapsed)
+        local remainingRound = math.max(0, delayTime + roundTime - elapsed)
+        
+        tntDelayEndTime = currentTime + remainingDelay
+        roundEndTime = currentTime + remainingRound
+        
+        roundThread = task.spawn(function()
+                while roundActive do
+                        local timeLeft = math.max(0, roundEndTime - tick())
+                        local delayLeft = math.max(0, tntDelayEndTime - tick())
+                        
+                        if delayLeft > 1 then
+                                roundTimerLabel.Text = "Round starts in: " .. math.ceil(delayLeft) .. "s"
+                                roundTimerLabel.Visible = true
+                        elseif timeLeft > 5 then
+                                roundTimerLabel.Text = "Round: " .. math.ceil(timeLeft) .. "s"
+                                roundTimerLabel.Visible = true
+                        elseif timeLeft > 0.5 then
+                                roundTimerLabel.Text = "Round ending soon..."
+                                roundTimerLabel.Visible = true
+                        else
+                                roundTimerLabel.Visible = false
+                                break
+                        end
+                        
+                        task.wait(0.05)
                 end
         end)
 end)
 
 RemoteEvents.RoundEnd.OnClientEvent:Connect(function(intermissionTime)
-        print("[RoundUI] Round ended! Intermission: " .. (intermissionTime or 3) .. "s")
+        print("[RoundUI] Round ended!")
         roundActive = false
-        roundTimeRemaining = 0
-        tntDelayRemaining = 0
         
-        local actualIntermissionTime = intermissionTime or 3
-        local timeRemaining = actualIntermissionTime
-        roundTimerLabel.Visible = true
+        if roundThread then
+                task.cancel(roundThread)
+                roundThread = nil
+        end
         
         if intermissionThread then
                 task.cancel(intermissionThread)
+                intermissionThread = nil
         end
         
-        intermissionThread = task.spawn(function()
-                while timeRemaining > 0 do
-                        roundTimerLabel.Text = "Next round: " .. math.floor(timeRemaining + 0.99) .. "s"
-                        task.wait(0.1)
-                        timeRemaining = timeRemaining - 0.1
-                end
-                if not roundActive then
-                        roundTimerLabel.Visible = false
-                end
-                intermissionThread = nil
-        end)
+        roundTimerLabel.Visible = false
 end)
 
 RemoteEvents.GameStartIntermission.OnClientEvent:Connect(function(intermissionTime)
@@ -101,20 +88,18 @@ RemoteEvents.GameStartIntermission.OnClientEvent:Connect(function(intermissionTi
         end
         
         roundActive = false
-        local timeRemaining = intermissionTime
+        local endTime = tick() + intermissionTime
         roundTimerLabel.Visible = true
         
         intermissionThread = task.spawn(function()
-                while timeRemaining > 0 do
-                        roundTimerLabel.Text = "Game Starting in: " .. math.floor(timeRemaining + 0.99) .. "s"
-                        task.wait(0.1)
-                        timeRemaining = timeRemaining - 0.1
+                while tick() < endTime - 0.1 do
+                        local timeLeft = endTime - tick()
+                        roundTimerLabel.Text = "Game Starting in: " .. math.ceil(timeLeft) .. "s"
+                        task.wait(0.05)
                 end
                 roundTimerLabel.Text = "Game Starting..."
-                task.wait(1)
-                if not roundActive then
-                        roundTimerLabel.Visible = false
-                end
+                task.wait(0.5)
+                roundTimerLabel.Visible = false
                 intermissionThread = nil
         end)
 end)

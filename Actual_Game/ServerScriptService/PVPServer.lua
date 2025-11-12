@@ -186,7 +186,11 @@ function PVPServer:StartRound()
                 print("[PVPServer] First round! TNT will be given in " .. tntDelay .. "s")
         end
         
-        RemoteEvents.RoundStart:FireAllClients(GameConfig.Game.RoundTime, tntDelay)
+        local roundStartTime = tick()
+        local tntGiveTime = roundStartTime + tntDelay
+        local explosionTime = roundStartTime + tntDelay + GameConfig.Game.RoundTime
+        
+        RemoteEvents.RoundStart:FireAllClients(GameConfig.Game.RoundTime, tntDelay, explosionTime)
         
         task.delay(tntDelay, function()
                 if not roundActive then return end

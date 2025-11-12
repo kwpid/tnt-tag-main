@@ -125,6 +125,8 @@ function PVPMain:GiveTNT(player)
         if tntAccessory then
                 local clone = tntAccessory:Clone()
                 clone.Parent = character
+                print("[PVPMain] Gave TNT to " .. player.Name)
+                RemoteEvents.TNTTransfer:FireAllClients(player)
         else
                 warn("[PVPMain] TNT accessory not found in ServerStorage.TNT.TNT")
         end

@@ -277,10 +277,16 @@ function GameManager:EndGame(winner)
         
         RemoteEvents.ShowWinner:FireAllClients(winnerName)
         
+        local playerMatchIds = {}
+        local playerSaveStatus = {}
+        
         for userId, playerData in pairs(activePlayers) do
                 local player = playerData.Player
                 if player and player.Parent then
                         local isWinner = (player == winner)
+                        local matchId, saveSuccess = PlayerDataManager:RecordMatchResult(player, isWinner, playerData.Deaths)
+                        playerMatchIds[userId] = matchId
+                        playerSaveStatus[userId] = saveSuccess
                         RemoteEvents.MatchResult:FireClient(player, isWinner, 0, playerData.Deaths)
                 end
         end
@@ -294,9 +300,11 @@ function GameManager:EndGame(winner)
                 local player = playerData.Player
                 if player and player.Parent and player.Team == Teams.Game then
                         local isWinner = (player == winner)
-                        print("[GameManager] Teleporting " .. player.Name .. " back to lobby")
+                        local matchId = playerMatchIds[userId]
+                        local saveSuccess = playerSaveStatus[userId]
+                        print("[GameManager] Teleporting " .. player.Name .. " back to lobby (Save: " .. tostring(saveSuccess) .. ")")
                         player.Team = Teams.Lobby
-                        self:TeleportToLobby(player, isWinner, playerData.Deaths)
+                        self:TeleportToLobby(player, isWinner, playerData.Deaths, matchId, saveSuccess)
                 end
         end
         
@@ -310,7 +318,7 @@ function GameManager:EndGame(winner)
         self:CheckStartGame()
 end
 
-function GameManager:TeleportToLobby(player, isWinner, deaths)
+function GameManager:TeleportToLobby(player, isWinner, deaths, matchId, saveSuccess)
         local lobbyPlaceId = GameConfig.LobbyPlaceId or game.PlaceId
         
         local teleportOptions = Instance.new("TeleportOptions")
@@ -321,10 +329,12 @@ function GameManager:TeleportToLobby(player, isWinner, deaths)
                         isWinner = isWinner,
                         kills = 0,
                         deaths = deaths or 0,
-                        mode = "Casual"
+                        mode = "Casual",
+                        matchId = matchId,
+                        alreadyProcessed = saveSuccess == true
                 }
                 teleportOptions:SetTeleportData(matchData)
-                print("[GameManager] Sending match data: Win=" .. tostring(isWinner) .. ", Deaths=" .. (deaths or 0))
+                print("[GameManager] Sending match data: Win=" .. tostring(isWinner) .. ", Deaths=" .. (deaths or 0) .. ", MatchID=" .. tostring(matchId) .. ", Processed=" .. tostring(saveSuccess))
         end
         
         local success, err = pcall(function()

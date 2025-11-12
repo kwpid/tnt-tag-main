@@ -3,6 +3,7 @@ local DataStoreService = game:GetService("DataStoreService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local PlayerDataService = require(ReplicatedStorage:WaitForChild("PlayerDataService"))
 
 local datastoreName = GameConfig.DataStore.Name .. "_" .. GameConfig.DataStore.Version
 local PlayerDataStore = DataStoreService:GetDataStore(datastoreName)
@@ -10,6 +11,8 @@ print("[PlayerData] Using DataStore: " .. datastoreName)
 
 local PlayerDataManager = {}
 PlayerDataManager.__index = PlayerDataManager
+
+local activePlayerData = {}
 
 local DEFAULT_DATA = {
         Wins = 0,
@@ -19,7 +22,11 @@ local DEFAULT_DATA = {
         Level = 1,
         XP = 0,
         RankedElo = 1000,
-        RecentMatches = {}
+        TotalMatches = 0,
+        MatchHistory = {},
+        RecentMatches = {},
+        LastMatchId = nil,
+        LastSaveTimestamp = 0
 }
 
 function PlayerDataManager.new()
@@ -35,6 +42,16 @@ function PlayerDataManager:Initialize()
                 self:LoadPlayerData(player)
         end)
         
+        Players.PlayerRemoving:Connect(function(player)
+                self:SavePlayerData(player, true)
+        end)
+        
+        game:BindToClose(function()
+                for _, player in ipairs(Players:GetPlayers()) do
+                        self:SavePlayerData(player, true)
+                end
+        end)
+        
         print("[PlayerData] Initialized successfully!")
 end
 
@@ -45,12 +62,49 @@ function PlayerDataManager:LoadPlayerData(player)
         end)
         
         if success and data then
+                activePlayerData[userId] = data
                 print("[PlayerData] Loaded data for " .. player.Name)
-                self:CreateLeaderstats(player, data)
         else
-                print("[PlayerData] Using default data for " .. player.Name)
-                self:CreateLeaderstats(player, self:GetDefaultData())
+                activePlayerData[userId] = self:GetDefaultData()
+                print("[PlayerData] Created new data for " .. player.Name)
         end
+        
+        self:CreateLeaderstats(player)
+end
+
+function PlayerDataManager:SavePlayerData(player, clearFromMemory)
+        local userId = player.UserId
+        local data = activePlayerData[userId]
+        
+        if not data then return false end
+        
+        local success, err = pcall(function()
+                PlayerDataStore:UpdateAsync("Player_" .. userId, function(oldData)
+                        if not oldData then
+                                return data
+                        end
+                        
+                        if data.LastMatchId and oldData.LastMatchId == data.LastMatchId then
+                                print("[PlayerData] Skipping duplicate match save for " .. player.Name)
+                                return oldData
+                        end
+                        
+                        return data
+                end)
+        end)
+        
+        if success then
+                print("[PlayerData] Saved data for " .. player.Name)
+        else
+                warn("[PlayerData] Failed to save data for " .. player.Name .. ": " .. tostring(err))
+        end
+        
+        if clearFromMemory then
+                activePlayerData[userId] = nil
+                print("[PlayerData] Cleared from memory: " .. player.Name)
+        end
+        
+        return success
 end
 
 function PlayerDataManager:GetDefaultData()
@@ -65,7 +119,12 @@ function PlayerDataManager:GetDefaultData()
         return data
 end
 
-function PlayerDataManager:CreateLeaderstats(player, data)
+function PlayerDataManager:GetPlayerData(player)
+        return activePlayerData[player.UserId]
+end
+
+function PlayerDataManager:CreateLeaderstats(player)
+        local data = self:GetPlayerData(player)
         if not data then return end
         
         local leaderstats = Instance.new("Folder")
@@ -86,6 +145,61 @@ function PlayerDataManager:CreateLeaderstats(player, data)
         winStreak.Name = "Win Streak"
         winStreak.Value = data.WinStreak
         winStreak.Parent = leaderstats
+end
+
+function PlayerDataManager:UpdateLeaderstats(player)
+        local data = self:GetPlayerData(player)
+        if not data then return end
+        
+        local leaderstats = player:FindFirstChild("leaderstats")
+        if not leaderstats then return end
+        
+        local wins = leaderstats:FindFirstChild("Wins")
+        if wins then wins.Value = data.Wins end
+        
+        local level = leaderstats:FindFirstChild("Level")
+        if level then level.Value = data.Level end
+        
+        local winStreak = leaderstats:FindFirstChild("Win Streak")
+        if winStreak then winStreak.Value = data.WinStreak end
+end
+
+function PlayerDataManager:RecordMatchResult(player, isWin, deaths)
+        local data = self:GetPlayerData(player)
+        if not data then
+                warn("[PlayerData] No data found for " .. player.Name)
+                return nil, false
+        end
+        
+        local timestamp = os.time()
+        local matchId = tostring(timestamp) .. "_" .. tostring(player.UserId) .. "_" .. tostring(math.random(1000, 9999))
+        
+        print("[PlayerData] Recording match result for " .. player.Name .. ": " .. (isWin and "WIN" or "LOSS"))
+        print("[PlayerData] Match ID: " .. matchId)
+        print("[PlayerData] Before - Wins: " .. data.Wins .. ", Level: " .. data.Level .. ", XP: " .. data.XP)
+        
+        data = PlayerDataService.RecordMatch(data, isWin, deaths)
+        
+        local xpGained = isWin and GameConfig.Rewards.WinXP or GameConfig.Rewards.LossXP
+        data = PlayerDataService.AddXP(data, xpGained)
+        
+        data.LastMatchId = matchId
+        data.LastSaveTimestamp = timestamp
+        
+        activePlayerData[player.UserId] = data
+        
+        print("[PlayerData] After - Wins: " .. data.Wins .. ", Level: " .. data.Level .. ", XP: " .. data.XP)
+        
+        self:UpdateLeaderstats(player)
+        local saveSuccess = self:SavePlayerData(player, false)
+        
+        if saveSuccess then
+                print("[PlayerData] Match result saved successfully for " .. player.Name)
+        else
+                warn("[PlayerData] Failed to save match result for " .. player.Name)
+        end
+        
+        return matchId, saveSuccess
 end
 
 local playerDataManager = PlayerDataManager.new()

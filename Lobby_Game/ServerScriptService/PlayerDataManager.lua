@@ -21,7 +21,11 @@ local DEFAULT_DATA = {
         Level = 1,
         XP = 0,
         RankedElo = 1000,
-        RecentMatches = {}
+        TotalMatches = 0,
+        MatchHistory = {},
+        RecentMatches = {},
+        LastMatchId = nil,
+        LastSaveTimestamp = 0
 }
 
 function PlayerDataManager.new()
@@ -88,9 +92,23 @@ function PlayerDataManager:ProcessMatchResult(player, matchData)
                 return
         end
         
+        if matchData.alreadyProcessed then
+                print("[PlayerData] Match already processed in sub-place for " .. player.Name .. ", skipping duplicate application")
+                local data = self:GetPlayerData(player)
+                if data then
+                        print("[PlayerData] Current stats - Wins: " .. data.Wins .. ", Level: " .. data.Level .. ", XP: " .. data.XP)
+                end
+                return
+        end
+        
         local data = self:GetPlayerData(player)
         if not data then
                 warn("[PlayerData] ERROR: No player data found when processing match result for " .. player.Name)
+                return
+        end
+        
+        if matchData.matchId and data.LastMatchId == matchData.matchId then
+                print("[PlayerData] Match ID " .. matchData.matchId .. " already processed for " .. player.Name .. ", skipping")
                 return
         end
         
@@ -101,6 +119,12 @@ function PlayerDataManager:ProcessMatchResult(player, matchData)
                 self:AddWin(player)
         else
                 self:AddLoss(player)
+        end
+        
+        if matchData.matchId then
+                data.LastMatchId = matchData.matchId
+                data.LastSaveTimestamp = os.time()
+                activePlayerData[player.UserId] = data
         end
         
         local updatedData = self:GetPlayerData(player)
@@ -125,10 +149,40 @@ function PlayerDataManager:SavePlayerData(player, clearFromMemory)
         local userId = player.UserId
         local data = activePlayerData[userId]
         
-        if not data then return end
+        if not data then return false end
         
         local success, err = pcall(function()
-                PlayerDataStore:SetAsync("Player_" .. userId, data)
+                PlayerDataStore:UpdateAsync("Player_" .. userId, function(oldData)
+                        if not oldData then
+                                return data
+                        end
+                        
+                        if data.LastMatchId and oldData.LastMatchId == data.LastMatchId then
+                                print("[PlayerData] Skipping duplicate match save for " .. player.Name)
+                                return oldData
+                        end
+                        
+                        local newTimestamp = data.LastSaveTimestamp or 0
+                        local oldTimestamp = oldData.LastSaveTimestamp or 0
+                        
+                        if newTimestamp >= oldTimestamp then
+                                print("[PlayerData] Accepting data snapshot for " .. player.Name .. " (timestamp: " .. newTimestamp .. ")")
+                                return data
+                        end
+                        
+                        print("[PlayerData] Merging older lobby data for " .. player.Name)
+                        for key, value in pairs(data) do
+                                if typeof(oldData[key]) == "number" and typeof(value) == "number" then
+                                        if value > oldData[key] then
+                                                oldData[key] = value
+                                        end
+                                else
+                                        oldData[key] = value
+                                end
+                        end
+                        
+                        return oldData
+                end)
         end)
         
         if success then
@@ -141,6 +195,8 @@ function PlayerDataManager:SavePlayerData(player, clearFromMemory)
                 activePlayerData[userId] = nil
                 print("[PlayerData] Cleared from memory: " .. player.Name)
         end
+        
+        return success
 end
 
 function PlayerDataManager:GetDefaultData()
@@ -211,6 +267,8 @@ function PlayerDataManager:AddWin(player)
                 data.HighestWinStreak = data.WinStreak
         end
         
+        data.LastSaveTimestamp = os.time()
+        
         self:AddXP(player, GameConfig.Rewards.WinXP)
         self:UpdateLeaderstats(player)
         
@@ -223,6 +281,8 @@ function PlayerDataManager:AddLoss(player)
         
         data.Losses = data.Losses + 1
         data.WinStreak = 0
+        
+        data.LastSaveTimestamp = os.time()
         
         self:AddXP(player, GameConfig.Rewards.LossXP)
         self:UpdateLeaderstats(player)

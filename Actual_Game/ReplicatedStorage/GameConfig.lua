@@ -1,5 +1,7 @@
 local GameConfig = {}
 
+GameConfig.LobbyPlaceId = 76587714865691
+
 GameConfig.Game = {
         MaxPlayers = 25,
         RoundTime = 45,

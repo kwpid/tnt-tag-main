@@ -97,7 +97,8 @@ function PVPMain:ApplyKnockback(character, fromPosition)
         velocity.MaxForce = Vector3.new(50000, 50000, 50000)
         velocity.Parent = hrp
         
-        game:GetService("Debris"):AddItem(velocity, 0.1)
+        game:GetService("Debris"):AddItem(velocity, 0.2)
+        print("[PVPMain] Applied knockback to " .. character.Name)
 end
 
 function PVPMain:TransferTNT(from, to)

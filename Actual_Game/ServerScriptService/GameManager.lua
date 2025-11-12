@@ -63,11 +63,11 @@ function GameManager:OnPlayerJoin(player)
         player.Team = Teams.Lobby
         
         if intermissionStartTime > 0 and not gameActive then
-                local elapsed = tick() - intermissionStartTime
-                local remaining = intermissionDuration - elapsed
-                if remaining > 0 then
-                        print("[GameManager] Sending intermission UI to late-joiner " .. player.Name .. " (" .. math.ceil(remaining) .. "s remaining)")
-                        RemoteEvents.GameStartIntermission:FireClient(player, remaining)
+                local intermissionEndTime = intermissionStartTime + intermissionDuration
+                local currentTime = workspace:GetServerTimeNow()
+                if currentTime < intermissionEndTime then
+                        print("[GameManager] Sending intermission UI to late-joiner " .. player.Name .. " (ends at " .. intermissionEndTime .. ")")
+                        RemoteEvents.GameStartIntermission:FireClient(player, intermissionEndTime)
                 end
         end
         
@@ -91,9 +91,10 @@ function GameManager:CheckStartGame()
                 end
                 
                 print("[GameManager] Map loaded! Starting " .. GameConfig.Game.StartIntermissionTime .. "s intermission...")
-                intermissionStartTime = tick()
+                intermissionStartTime = workspace:GetServerTimeNow()
                 intermissionDuration = GameConfig.Game.StartIntermissionTime
-                RemoteEvents.GameStartIntermission:FireAllClients(GameConfig.Game.StartIntermissionTime)
+                local intermissionEndTime = intermissionStartTime + intermissionDuration
+                RemoteEvents.GameStartIntermission:FireAllClients(intermissionEndTime)
                 
                 countdownThread = task.spawn(function()
                         task.wait(GameConfig.Game.StartIntermissionTime)

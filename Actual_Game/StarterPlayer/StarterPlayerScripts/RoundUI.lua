@@ -44,16 +44,16 @@ RemoteEvents.RoundStart.OnClientEvent:Connect(function(serverExplosionTime, tntD
                         local timeLeft = math.max(0, roundEndTime - currentTime)
                         local delayLeft = math.max(0, tntDelayEndTime - currentTime)
                         
-                        if delayLeft > 1 then
+                        if delayLeft > 0 then
                                 roundTimerLabel.Text = "Round starts in: " .. math.ceil(delayLeft) .. "s"
                                 roundTimerLabel.Visible = true
-                        elseif timeLeft > 5 then
+                        elseif timeLeft > 0 then
                                 roundTimerLabel.Text = "Round: " .. math.ceil(timeLeft) .. "s"
                                 roundTimerLabel.Visible = true
-                        elseif timeLeft > 0.5 then
-                                roundTimerLabel.Text = "Round ending soon..."
-                                roundTimerLabel.Visible = true
                         else
+                                roundTimerLabel.Text = "Round: 0s"
+                                roundTimerLabel.Visible = true
+                                task.wait(0.1)
                                 roundTimerLabel.Visible = false
                                 break
                         end
@@ -80,8 +80,10 @@ RemoteEvents.RoundEnd.OnClientEvent:Connect(function(intermissionTime)
         roundTimerLabel.Visible = false
 end)
 
-RemoteEvents.GameStartIntermission.OnClientEvent:Connect(function(intermissionTime)
-        print("[RoundUI] Game starting intermission: " .. intermissionTime .. "s")
+RemoteEvents.GameStartIntermission.OnClientEvent:Connect(function(serverIntermissionEndTime)
+        print("[RoundUI] Game starting intermission, ends at: " .. serverIntermissionEndTime)
+        
+        TimeSync.WaitForSync()
         
         if intermissionThread then
                 task.cancel(intermissionThread)
@@ -89,19 +91,28 @@ RemoteEvents.GameStartIntermission.OnClientEvent:Connect(function(intermissionTi
         end
         
         roundActive = false
-        local endTime = tick() + intermissionTime
         roundTimerLabel.Visible = true
         
         intermissionThread = task.spawn(function()
-                while tick() < endTime - 0.1 do
-                        local timeLeft = endTime - tick()
-                        roundTimerLabel.Text = "Game Starting in: " .. math.ceil(timeLeft) .. "s"
+                while true do
+                        local clientEndTime = TimeSync.ServerToClientTime(serverIntermissionEndTime)
+                        local currentTime = tick()
+                        local timeLeft = math.max(0, clientEndTime - currentTime)
+                        
+                        if timeLeft > 0 then
+                                roundTimerLabel.Text = "Game Starting in: " .. math.ceil(timeLeft) .. "s"
+                        else
+                                roundTimerLabel.Text = "Game Starting in: 0s"
+                                task.wait(0.1)
+                                roundTimerLabel.Text = "Game Starting..."
+                                task.wait(0.5)
+                                roundTimerLabel.Visible = false
+                                intermissionThread = nil
+                                break
+                        end
+                        
                         task.wait(0.05)
                 end
-                roundTimerLabel.Text = "Game Starting..."
-                task.wait(0.5)
-                roundTimerLabel.Visible = false
-                intermissionThread = nil
         end)
 end)
 

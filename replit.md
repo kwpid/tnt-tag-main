@@ -176,6 +176,8 @@ Debug:
 - **2025-11-11:** Round timer UI (countdown display)
 - **2025-11-11:** TNT indicator UI (shows when player has TNT)
 - **2025-11-11:** Camera controller (Q to switch First/Third person)
+- **2025-11-12:** Added 15s game start intermission timer before first round
+- **2025-11-12:** Added hover size tween effect to Casual/Ranked buttons (1.05x scale)
 
 ## User Preferences
 None specified.

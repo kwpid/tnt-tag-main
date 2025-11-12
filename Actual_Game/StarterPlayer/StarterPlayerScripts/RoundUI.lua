@@ -65,6 +65,33 @@ RemoteEvents.RoundEnd.OnClientEvent:Connect(function()
         end)
 end)
 
+RemoteEvents.GameStartIntermission.OnClientEvent:Connect(function(intermissionTime)
+        print("[RoundUI] Game starting intermission: " .. intermissionTime .. "s")
+        
+        if intermissionThread then
+                task.cancel(intermissionThread)
+                intermissionThread = nil
+        end
+        
+        roundActive = false
+        local timeRemaining = intermissionTime
+        roundTimerLabel.Visible = true
+        
+        intermissionThread = task.spawn(function()
+                while timeRemaining > 0 do
+                        roundTimerLabel.Text = "Game Starting in: " .. math.ceil(timeRemaining) .. "s"
+                        task.wait(0.1)
+                        timeRemaining = timeRemaining - 0.1
+                end
+                roundTimerLabel.Text = "Game Starting..."
+                task.wait(0.5)
+                if not roundActive then
+                        roundTimerLabel.Visible = false
+                end
+                intermissionThread = nil
+        end)
+end)
+
 roundTimerLabel.Visible = false
 
 print("[RoundUI] Round UI initialized")

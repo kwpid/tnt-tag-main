@@ -74,20 +74,38 @@ function QueueUIController:PlaySound(soundName)
         end
 end
 
-function QueueUIController:AddHoverEffect(button, hoverColor, normalColor)
+function QueueUIController:AddHoverEffect(button, hoverColor, normalColor, enableSizeEffect)
         local originalColor = normalColor or button.BackgroundColor3
+        local originalSize = button.Size
         
         button.MouseEnter:Connect(function()
                 self:PlaySound("Hover")
-                TweenService:Create(button, TweenInfo.new(0.2), {
+                local tweenProps = {
                         BackgroundColor3 = hoverColor or originalColor:Lerp(Color3.fromRGB(255, 255, 255), 0.2)
-                }):Play()
+                }
+                
+                if enableSizeEffect then
+                        tweenProps.Size = UDim2.new(
+                                originalSize.X.Scale * 1.05,
+                                originalSize.X.Offset,
+                                originalSize.Y.Scale * 1.05,
+                                originalSize.Y.Offset
+                        )
+                end
+                
+                TweenService:Create(button, TweenInfo.new(0.2), tweenProps):Play()
         end)
         
         button.MouseLeave:Connect(function()
-                TweenService:Create(button, TweenInfo.new(0.2), {
+                local tweenProps = {
                         BackgroundColor3 = originalColor
-                }):Play()
+                }
+                
+                if enableSizeEffect then
+                        tweenProps.Size = originalSize
+                end
+                
+                TweenService:Create(button, TweenInfo.new(0.2), tweenProps):Play()
         end)
 end
 
@@ -220,8 +238,9 @@ function QueueUIController:Initialize()
         self:CreateBlur()
         self:CreateSounds()
         
-        self:AddHoverEffect(casualButton, Color3.fromRGB(70, 220, 120), Color3.fromRGB(50, 200, 100))
-        self:AddHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
+        self:AddHoverEffect(casualButton, Color3.fromRGB(70, 220, 120), Color3.fromRGB(50, 200, 100), true)
+        self:AddHoverEffect(rankedButton, Color3.fromRGB(70, 120, 220), Color3.fromRGB(50, 100, 200), true)
+        self:AddHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50), false)
         
         self.originalButtonColor = queueButton.BackgroundColor3
         

@@ -171,6 +171,10 @@ function GameManager:StartGame()
                 return
         end
         
+        print("[GameManager] Starting " .. GameConfig.Game.StartIntermissionTime .. "s intermission before first round...")
+        RemoteEvents.GameStartIntermission:FireAllClients(GameConfig.Game.StartIntermissionTime)
+        task.wait(GameConfig.Game.StartIntermissionTime)
+        
         while gameActive do
                 local aliveCount = self.PVP:GetAliveCount()
                 

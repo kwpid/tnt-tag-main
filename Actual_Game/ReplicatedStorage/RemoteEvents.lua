@@ -2,15 +2,22 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local RemoteEvents = {}
 
+local remoteEventsFolder = ReplicatedStorage:FindFirstChild("RemoteEvents")
+if not remoteEventsFolder then
+        remoteEventsFolder = Instance.new("Folder")
+        remoteEventsFolder.Name = "RemoteEvents"
+        remoteEventsFolder.Parent = ReplicatedStorage
+end
+
 local function getOrCreate(name, className)
-        local existing = ReplicatedStorage:FindFirstChild(name)
+        local existing = remoteEventsFolder:FindFirstChild(name)
         if existing then
                 return existing
         end
         
         local newInstance = Instance.new(className)
         newInstance.Name = name
-        newInstance.Parent = ReplicatedStorage
+        newInstance.Parent = remoteEventsFolder
         return newInstance
 end
 

@@ -1,120 +1,256 @@
---[[
-        PVPServer.lua
-        Refactored PvP hit handler using service architecture
-]]
-
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
+local ServerStorage = game:GetService("ServerStorage")
+local Teams = game:GetService("Teams")
+local Debris = game:GetService("Debris")
 
-local Logger = require(script.Parent.Shared.Logger)
-local ServiceRegistry = require(script.Parent.Shared.ServiceRegistry)
-local Config = require(game.ServerStorage.Config.GameConfig)
+local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local RemoteEvents = require(ReplicatedStorage:WaitForChild("RemoteEvents"))
 
-local PvPEvent = ReplicatedStorage:WaitForChild(Config.Remotes.RemotesFolder):WaitForChild(Config.Remotes.PvPEvent)
+local PVPServer = {}
+PVPServer.__index = PVPServer
 
-local logger = Logger.new("PVPServer")
-local debounceTable = {}
+local currentIT = nil
+local roundActive = false
+local alivePlayers = {}
+local hitCooldowns = {}
 
--- Wait for services to be registered by Main.server.lua
-local tntService, effectsService
-task.spawn(function()
-        -- Wait for services to be available
-        local maxWait = 10
-        local waited = 0
-        while waited < maxWait do
-                tntService = ServiceRegistry:get("TNTService")
-                effectsService = ServiceRegistry:get("EffectsService")
+function PVPServer.new(gameManager)
+        local self = setmetatable({}, PVPServer)
+        self.GameManager = gameManager
+        self:Initialize()
+        return self
+end
 
-                if tntService and effectsService then
-                        logger:info("Services loaded from registry")
-                        break
+function PVPServer:Initialize()
+        print("[PVPServer] Initializing...")
+        
+        self:SetupTeams()
+        self:SetupHitDetection()
+        
+        print("[PVPServer] Initialized successfully!")
+end
+
+function PVPServer:SetupTeams()
+        local lobbyTeam = Teams:FindFirstChild("Lobby")
+        if not lobbyTeam then
+                lobbyTeam = Instance.new("Team")
+                lobbyTeam.Name = "Lobby"
+                lobbyTeam.TeamColor = BrickColor.new("Bright blue")
+                lobbyTeam.AutoAssignable = true
+                lobbyTeam.Parent = Teams
+        end
+        
+        local gameTeam = Teams:FindFirstChild("Game")
+        if not gameTeam then
+                gameTeam = Instance.new("Team")
+                gameTeam.Name = "Game"
+                gameTeam.TeamColor = BrickColor.new("Bright red")
+                gameTeam.AutoAssignable = false
+                gameTeam.Parent = Teams
+        end
+        
+        print("[PVPServer] Teams created")
+end
+
+function PVPServer:SetupHitDetection()
+        RemoteEvents.PlayerHit.OnServerEvent:Connect(function(player, targetPlayer)
+                self:OnPlayerHit(player, targetPlayer)
+        end)
+end
+
+function PVPServer:OnPlayerHit(attacker, victim)
+        if not roundActive then return end
+        if not attacker or not victim then return end
+        if attacker == victim then return end
+        
+        local attackerChar = attacker.Character
+        local victimChar = victim.Character
+        if not attackerChar or not victimChar then return end
+        
+        local attackerHRP = attackerChar:FindFirstChild("HumanoidRootPart")
+        local victimHRP = victimChar:FindFirstChild("HumanoidRootPart")
+        if not attackerHRP or not victimHRP then return end
+        
+        local distance = (attackerHRP.Position - victimHRP.Position).Magnitude
+        if distance > GameConfig.PVP.HitRange then return end
+        
+        local cooldownKey = attacker.UserId .. "_" .. victim.UserId
+        if hitCooldowns[cooldownKey] and tick() - hitCooldowns[cooldownKey] < GameConfig.PVP.HitCooldown then
+                return
+        end
+        hitCooldowns[cooldownKey] = tick()
+        
+        RemoteEvents.HitEffect:FireAllClients(victim, attacker)
+        
+        if attacker == currentIT then
+                self:TransferTNT(attacker, victim)
+        end
+        
+        self:ApplyKnockback(victimChar, attackerHRP.Position)
+end
+
+function PVPServer:ApplyKnockback(character, fromPosition)
+        local hrp = character:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+        
+        local direction = (hrp.Position - fromPosition).Unit
+        local velocity = Instance.new("BodyVelocity")
+        velocity.Velocity = direction * GameConfig.PVP.KnockbackPower + Vector3.new(0, 20, 0)
+        velocity.MaxForce = Vector3.new(50000, 50000, 50000)
+        velocity.Parent = hrp
+        
+        Debris:AddItem(velocity, 0.2)
+        print("[PVPServer] Applied knockback to " .. character.Name)
+end
+
+function PVPServer:TransferTNT(from, to)
+        if currentIT ~= from then return end
+        if not alivePlayers[to.UserId] then return end
+        
+        self:RemoveTNT(from)
+        self:GiveTNT(to)
+        
+        print("[PVPServer] TNT transferred from " .. from.Name .. " to " .. to.Name)
+        RemoteEvents.TNTTransfer:FireAllClients(to)
+end
+
+function PVPServer:GiveTNT(player)
+        currentIT = player
+        
+        local character = player.Character
+        if not character then return end
+        
+        local tntAccessory = ServerStorage:FindFirstChild("TNT")
+        if tntAccessory then
+                tntAccessory = tntAccessory:FindFirstChild("TNT")
+        end
+        
+        if tntAccessory then
+                local clone = tntAccessory:Clone()
+                clone.Parent = character
+                print("[PVPServer] Gave TNT to " .. player.Name)
+                RemoteEvents.TNTTransfer:FireAllClients(player)
+        else
+                warn("[PVPServer] TNT accessory not found in ServerStorage.TNT.TNT")
+        end
+end
+
+function PVPServer:RemoveTNT(player)
+        local character = player.Character
+        if not character then return end
+        
+        for _, accessory in ipairs(character:GetChildren()) do
+                if accessory:IsA("Accessory") and accessory.Name == "TNT" then
+                        accessory:Destroy()
                 end
-
-                task.wait(0.1)
-                waited = waited + 0.1
         end
-
-        if not tntService or not effectsService then
-                logger:error("Failed to load services from registry, creating fallback instances")
-                local TNTService = require(script.Parent.Services.TNTService)
-                local EffectsService = require(script.Parent.Services.EffectsService)
-                tntService = TNTService.new()
-                effectsService = EffectsService.new()
-        end
-end)
-
-local function getDistance(p1, p2)
-        return (p1.Position - p2.Position).Magnitude
 end
 
-local function isEligible(player, target)
-        if not player.Character or not target.Character then
-                return false
+function PVPServer:InitializeAlivePlayers()
+        alivePlayers = {}
+        local gamePlayers = Teams.Game:GetPlayers()
+        print("[PVPServer] Game team has " .. #gamePlayers .. " players")
+        
+        for _, player in ipairs(gamePlayers) do
+                alivePlayers[player.UserId] = true
+                print("[PVPServer] Added " .. player.Name .. " to alive players")
         end
-        if not player.Character:FindFirstChild("HumanoidRootPart") then
-                return false
-        end
-        if not target.Character:FindFirstChild("HumanoidRootPart") then
-                return false
-        end
-        if player == target then
-                return false
-        end
-
-        if not player.Team or not target.Team then
-                return false
-        end
-        if player.Team.Name ~= Config.Teams.GameTeam or target.Team.Name ~= Config.Teams.GameTeam then
-                return false
-        end
-
-        local distance = getDistance(
-                player.Character.HumanoidRootPart,
-                target.Character.HumanoidRootPart
-        )
-
-        if distance > Config.PvP.MaxHitRange then
-                return false
-        end
-
-        return true
+        
+        print("[PVPServer] Initialized " .. self:GetAliveCount() .. " alive players")
 end
 
-PvPEvent.OnServerEvent:Connect(function(player, target)
-        if not target or not target:IsA("Player") then
+function PVPServer:StartRound()
+        roundActive = true
+        print("[PVPServer] Round starting...")
+        
+        self:InitializeAlivePlayers()
+        
+        local alivelist = {}
+        for userId, _ in pairs(alivePlayers) do
+                local player = Players:GetPlayerByUserId(userId)
+                if player then
+                        table.insert(alivelist, player)
+                end
+        end
+        
+        if #alivelist == 0 then
+                print("[PVPServer] No alive players")
                 return
         end
+        
+        local randomPlayer = alivelist[math.random(1, #alivelist)]
+        self:GiveTNT(randomPlayer)
+        
+        RemoteEvents.RoundStart:FireAllClients(GameConfig.Game.RoundTime)
+        
+        task.wait(GameConfig.Game.RoundTime)
+        
+        self:ExplodeTNT()
+end
 
-        -- Wait for services to be loaded
-        if not tntService or not effectsService then
-                logger:warn("Services not yet loaded, ignoring hit")
-                return
+function PVPServer:ExplodeTNT()
+        roundActive = false
+        
+        if currentIT then
+                local aliveCount = self:GetAliveCount()
+                
+                if aliveCount == 2 then
+                        print("[PVPServer] 1v1 situation - only " .. currentIT.Name .. " dies from TNT explosion")
+                else
+                        print("[PVPServer] " .. currentIT.Name .. " exploded!")
+                end
+                
+                self:KillPlayer(currentIT)
+                self:RemoveTNT(currentIT)
+                currentIT = nil
         end
+        
+        RemoteEvents.RoundEnd:FireAllClients()
+end
 
-        if not isEligible(player, target) then
-                return
+function PVPServer:KillPlayer(player)
+        alivePlayers[player.UserId] = nil
+        
+        local character = player.Character
+        if character then
+                local humanoid = character:FindFirstChild("Humanoid")
+                if humanoid then
+                        humanoid.Health = 0
+                end
         end
+        
+        player.Team = Teams.Lobby
+        
+        self.GameManager:RecordDeath(player)
+end
 
-        if not player:GetAttribute("CanHit") or not target:GetAttribute("CanHit") then
-                return
+function PVPServer:GetAliveCount()
+        local count = 0
+        for userId, _ in pairs(alivePlayers) do
+                local player = Players:GetPlayerByUserId(userId)
+                if player then
+                        count = count + 1
+                end
         end
+        return count
+end
 
-        -- Debounce check
-        if debounceTable[player] and tick() - debounceTable[player] < Config.PvP.HitCooldown then
-                return
+function PVPServer:GetWinner()
+        for userId, _ in pairs(alivePlayers) do
+                local player = Players:GetPlayerByUserId(userId)
+                if player then
+                        return player
+                end
         end
-        debounceTable[player] = tick()
+        return nil
+end
 
-        local humanoid = target.Character and target.Character:FindFirstChild("Humanoid")
-        if humanoid then
-                -- Play hit effects
-                effectsService:playHitFeedback(player, target)
+function PVPServer:Reset()
+        roundActive = false
+        currentIT = nil
+        alivePlayers = {}
+        hitCooldowns = {}
+end
 
-                -- Try to transfer TNT
-                tntService:transferTNT(player, target)
-
-                logger:debug(player.Name .. " hit " .. target.Name)
-        end
-end)
-
-logger:info("PvP Server initialized")
+return PVPServer

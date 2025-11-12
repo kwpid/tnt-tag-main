@@ -6,7 +6,7 @@ local Teams = game:GetService("Teams")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local RemoteEvents = require(ReplicatedStorage:WaitForChild("RemoteEvents"))
-local PVPMain = require(script.Parent:WaitForChild("PVPMain"))
+local PVPServer = require(script.Parent:WaitForChild("PVPServer"))
 local PlayerDataManager = require(script.Parent:WaitForChild("PlayerDataManager"))
 
 local GameManager = {}
@@ -27,7 +27,7 @@ end
 function GameManager:Initialize()
         print("[GameManager] Initializing...")
         
-        self.PVP = PVPMain.new(self)
+        self.PVP = PVPServer.new(self)
         
         Players.PlayerAdded:Connect(function(player)
                 self:OnPlayerJoin(player)

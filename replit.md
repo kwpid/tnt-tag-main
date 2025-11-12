@@ -186,6 +186,12 @@ Debug:
 - **2025-11-12:** Improved PVP knockback system - increased knockback duration to 0.2s for better visibility
 - **2025-11-12:** Fixed return to lobby UI - BackToLobby button now shows for all players at game end (including winner)
 - **2025-11-12:** Fixed teleport destination - added LobbyPlaceId (76587714865691) to properly return players to lobby
+- **2025-11-12:** Restructured game flow - map loads during intermission while players wait in Lobby team
+- **2025-11-12:** Lowered hit cooldown to 0.3s to allow for combo attacks
+- **2025-11-12:** Added hit sound effect (rbxassetid://8595980577) when players hit each other
+- **2025-11-12:** Added mobile support - TouchTap and Touch input detection for hitting players
+- **2025-11-12:** Redesigned stats system - uses TeleportData to send match results from Actual_Game to Lobby
+- **2025-11-12:** Lobby server now processes match results via TeleportData on PlayerAdded
 
 ## User Preferences
 None specified.

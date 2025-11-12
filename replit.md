@@ -182,6 +182,10 @@ Debug:
 - **2025-11-12:** Implemented proper game lifecycle with countdown/cleanup state management
 - **2025-11-12:** Added cleanupInProgress flag to prevent race conditions during match cleanup
 - **2025-11-12:** Fixed EndGame to only teleport game participants, preserving lobby joiners for next match
+- **2025-11-12:** Fixed TNT assignment - now fires TNTTransfer event when TNT is given at round start
+- **2025-11-12:** Improved PVP knockback system - increased knockback duration to 0.2s for better visibility
+- **2025-11-12:** Fixed return to lobby UI - BackToLobby button now shows for all players at game end (including winner)
+- **2025-11-12:** Fixed teleport destination - added LobbyPlaceId (76587714865691) to properly return players to lobby
 
 ## User Preferences
 None specified.

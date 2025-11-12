@@ -178,6 +178,10 @@ Debug:
 - **2025-11-11:** Camera controller (Q to switch First/Third person)
 - **2025-11-12:** Added 15s game start intermission timer before first round
 - **2025-11-12:** Added hover size tween effect to Casual/Ranked buttons (1.05x scale)
+- **2025-11-12:** Fixed critical game start bug - game now waits for players to teleport in before starting
+- **2025-11-12:** Implemented proper game lifecycle with countdown/cleanup state management
+- **2025-11-12:** Added cleanupInProgress flag to prevent race conditions during match cleanup
+- **2025-11-12:** Fixed EndGame to only teleport game participants, preserving lobby joiners for next match
 
 ## User Preferences
 None specified.

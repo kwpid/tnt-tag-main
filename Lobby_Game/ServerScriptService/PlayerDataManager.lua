@@ -38,12 +38,12 @@ function PlayerDataManager:Initialize()
         end)
         
         Players.PlayerRemoving:Connect(function(player)
-                self:SavePlayerData(player)
+                self:SavePlayerData(player, true)
         end)
         
         game:BindToClose(function()
                 for _, player in ipairs(Players:GetPlayers()) do
-                        self:SavePlayerData(player)
+                        self:SavePlayerData(player, true)
                 end
         end)
         
@@ -66,28 +66,45 @@ function PlayerDataManager:LoadPlayerData(player)
         
         self:CreateLeaderstats(player)
         
-        local joinData = player:GetJoinData()
-        if joinData and joinData.TeleportData then
-                self:ProcessMatchResult(player, joinData.TeleportData)
-        end
+        task.spawn(function()
+                task.wait(0.5)
+                
+                local joinData = player:GetJoinData()
+                if joinData and joinData.TeleportData then
+                        print("[PlayerData] Found TeleportData for " .. player.Name)
+                        self:ProcessMatchResult(player, joinData.TeleportData)
+                end
+        end)
 end
 
 function PlayerDataManager:ProcessMatchResult(player, matchData)
         if type(matchData) ~= "table" then
+                print("[PlayerData] Invalid matchData type for " .. player.Name)
                 return
         end
         
         if matchData.isWinner == nil then
+                print("[PlayerData] No winner data in matchData for " .. player.Name)
+                return
+        end
+        
+        local data = self:GetPlayerData(player)
+        if not data then
+                warn("[PlayerData] ERROR: No player data found when processing match result for " .. player.Name)
                 return
         end
         
         print("[PlayerData] Processing match result for " .. player.Name .. ": " .. (matchData.isWinner and "WIN" or "LOSS"))
+        print("[PlayerData] Current stats - Wins: " .. data.Wins .. ", Level: " .. data.Level .. ", XP: " .. data.XP)
         
         if matchData.isWinner then
                 self:AddWin(player)
         else
                 self:AddLoss(player)
         end
+        
+        local updatedData = self:GetPlayerData(player)
+        print("[PlayerData] Updated stats - Wins: " .. updatedData.Wins .. ", Level: " .. updatedData.Level .. ", XP: " .. updatedData.XP)
         
         local mode = matchData.mode or "Casual"
         local recentMatchData = {
@@ -99,12 +116,12 @@ function PlayerDataManager:ProcessMatchResult(player, matchData)
         }
         
         self:AddRecentMatch(player, recentMatchData)
-        self:SavePlayerData(player)
+        self:SavePlayerData(player, false)
         
         print("[PlayerData] Match result processed and saved for " .. player.Name)
 end
 
-function PlayerDataManager:SavePlayerData(player)
+function PlayerDataManager:SavePlayerData(player, clearFromMemory)
         local userId = player.UserId
         local data = activePlayerData[userId]
         
@@ -120,7 +137,10 @@ function PlayerDataManager:SavePlayerData(player)
                 warn("[PlayerData] Failed to save data for " .. player.Name .. ": " .. tostring(err))
         end
         
-        activePlayerData[userId] = nil
+        if clearFromMemory then
+                activePlayerData[userId] = nil
+                print("[PlayerData] Cleared from memory: " .. player.Name)
+        end
 end
 
 function PlayerDataManager:GetDefaultData()

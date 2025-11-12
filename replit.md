@@ -31,13 +31,14 @@ Lobby_Game/
 ```
 Actual_Game/
 ├── ReplicatedStorage/
-│   ├── GameConfig.lua              # TNT Tag game configuration
+│   ├── GameConfig.lua              # TNT Tag game configuration (with DataStore version)
 │   ├── RemoteEvents.lua            # Client-server events
 │   └── PlayerDataService.lua       # Data helper functions
 │
 ├── ServerScriptService/
 │   ├── GameManager.lua             # TNT Tag match management
-│   ├── PVPMain.lua                 # TNT Tag game logic
+│   ├── PVPMain.lua                 # TNT Tag game logic (server-side hit effects)
+│   ├── PlayerDataManager.lua       # Player data loading & leaderstats
 │   └── MatchResultHandler.lua      # Result processing
 │
 ├── StarterPlayer/StarterPlayerScripts/
@@ -46,7 +47,8 @@ Actual_Game/
 │   ├── GhostSystem.lua             # Ghost mode & Back to Lobby
 │   ├── RoundUI.lua                 # Round timer UI controller
 │   ├── TNTIndicator.lua            # TNT indicator UI controller
-│   └── CameraController.lua        # First/Third person camera toggle
+│   ├── CameraController.lua        # First/Third person camera toggle
+│   └── EndGameUI.lua               # Winner announcement & countdown
 │
 └── StarterGui/MainGUI/
     └── BackToLobby (TextButton)    # Return to lobby UI
@@ -192,6 +194,14 @@ Debug:
 - **2025-11-12:** Added mobile support - TouchTap and Touch input detection for hitting players
 - **2025-11-12:** Redesigned stats system - uses TeleportData to send match results from Actual_Game to Lobby
 - **2025-11-12:** Lobby server now processes match results via TeleportData on PlayerAdded
+- **2025-11-12:** Added DataStore version tag system (GameConfig.DataStore) for easy data resets
+- **2025-11-12:** Created PlayerDataManager in Actual_Game - leaderstats now show during matches
+- **2025-11-12:** Fixed match result persistence - TeleportData is properly validated and processed on lobby join
+- **2025-11-12:** Moved hit effects to server-side - highlight and sound now consistent across all clients
+- **2025-11-12:** Added winner announcement UI with player name display
+- **2025-11-12:** Added "Returning to lobby in [X]s" countdown display after match ends
+- **2025-11-12:** Ensured 1v1 TNT explosion only kills the holder, not both players
+- **2025-11-12:** Added proper UI cleanup on teleport and countdown completion
 
 ## User Preferences
 None specified.
@@ -202,6 +212,7 @@ None specified.
 - Set `GameConfig.SubPlace.PlaceId` to Actual_Game ID
 - Publish sub-place before testing teleportation
 - Enable DataStore in game settings
+- **To reset player data:** Change `GameConfig.DataStore.Version` in both Lobby_Game and Actual_Game (e.g., "v1" → "v2")
 
 ### Testing
 - Use TestMode = true to test without teleportation

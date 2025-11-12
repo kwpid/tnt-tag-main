@@ -13,7 +13,9 @@ GameManager.__index = GameManager
 
 local activePlayers = {}
 local gameActive = false
+local cleanupInProgress = false
 local currentMap = nil
+local countdownThread = nil
 
 function GameManager.new()
         local self = setmetatable({}, GameManager)
@@ -38,10 +40,7 @@ function GameManager:Initialize()
                 self:TeleportToLobby(player)
         end)
         
-        task.wait(GameConfig.Game.FirstRoundDelay)
-        self:StartGame()
-        
-        print("[GameManager] Initialized successfully!")
+        print("[GameManager] Initialized successfully! Waiting for players to join...")
 end
 
 function GameManager:OnPlayerJoin(player)
@@ -59,6 +58,41 @@ function GameManager:OnPlayerJoin(player)
         }
         
         player.Team = Teams.Lobby
+        
+        self:CheckStartGame()
+end
+
+function GameManager:CheckStartGame()
+        if countdownThread or gameActive or cleanupInProgress then
+                return
+        end
+        
+        local lobbyPlayerCount = #Teams.Lobby:GetPlayers()
+        print("[GameManager] Lobby has " .. lobbyPlayerCount .. " players")
+        
+        if lobbyPlayerCount >= 2 then
+                print("[GameManager] Enough players joined! Starting countdown: " .. GameConfig.Game.FirstRoundDelay .. " seconds...")
+                
+                countdownThread = task.spawn(function()
+                        task.wait(GameConfig.Game.FirstRoundDelay)
+                        
+                        local currentLobbyCount = #Teams.Lobby:GetPlayers()
+                        if currentLobbyCount < 2 then
+                                warn("[GameManager] Not enough players remained during countdown (have " .. currentLobbyCount .. "), aborting...")
+                                countdownThread = nil
+                                return
+                        end
+                        
+                        if gameActive then
+                                warn("[GameManager] Game already active, skipping...")
+                                countdownThread = nil
+                                return
+                        end
+                        
+                        countdownThread = nil
+                        self:StartGame()
+                end)
+        end
 end
 
 function GameManager:OnPlayerLeave(player)
@@ -120,7 +154,9 @@ function GameManager:SpawnPlayers()
 end
 
 function GameManager:StartGame()
+        print("[GameManager] ========================================")
         print("[GameManager] Starting TNT Tag game...")
+        print("[GameManager] ========================================")
         gameActive = true
         
         if not self:LoadMap() then
@@ -194,6 +230,7 @@ end
 function GameManager:EndGame(winner)
         print("[GameManager] Ending game...")
         gameActive = false
+        cleanupInProgress = true
         self.PVP:Reset()
         
         for userId, playerData in pairs(activePlayers) do
@@ -214,7 +251,9 @@ function GameManager:EndGame(winner)
         
         for userId, playerData in pairs(activePlayers) do
                 local player = playerData.Player
-                if player and player.Parent then
+                if player and player.Parent and player.Team == Teams.Game then
+                        print("[GameManager] Teleporting " .. player.Name .. " back to lobby")
+                        player.Team = Teams.Lobby
                         self:TeleportToLobby(player)
                 end
         end
@@ -223,6 +262,10 @@ function GameManager:EndGame(winner)
                 currentMap:Destroy()
                 currentMap = nil
         end
+        
+        cleanupInProgress = false
+        print("[GameManager] Cleanup complete, ready for next match")
+        self:CheckStartGame()
 end
 
 function GameManager:TeleportToLobby(player)

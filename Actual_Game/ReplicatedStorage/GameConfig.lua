@@ -1,5 +1,10 @@
 local GameConfig = {}
 
+GameConfig.DataStore = {
+        Version = "v1",
+        Name = "PlayerData"
+}
+
 GameConfig.LobbyPlaceId = 76587714865691
 
 GameConfig.Game = {

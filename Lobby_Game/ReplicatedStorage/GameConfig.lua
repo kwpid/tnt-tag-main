@@ -1,5 +1,10 @@
 local GameConfig = {}
 
+GameConfig.DataStore = {
+        Version = "v1",
+        Name = "PlayerData"
+}
+
 GameConfig.SubPlace = {
         PlaceId = 0,
         AccessCode = nil

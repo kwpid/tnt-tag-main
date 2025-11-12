@@ -7,6 +7,7 @@ local Teams = game:GetService("Teams")
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local RemoteEvents = require(ReplicatedStorage:WaitForChild("RemoteEvents"))
 local PVPMain = require(script.Parent:WaitForChild("PVPMain"))
+local PlayerDataManager = require(script.Parent:WaitForChild("PlayerDataManager"))
 
 local GameManager = {}
 GameManager.__index = GameManager
@@ -243,21 +244,23 @@ function GameManager:EndGame(winner)
         cleanupInProgress = true
         self.PVP:Reset()
         
+        local winnerName = winner and winner.Name or "No one"
+        print("[GameManager] Winner: " .. winnerName)
+        
+        RemoteEvents.ShowWinner:FireAllClients(winnerName)
+        
         for userId, playerData in pairs(activePlayers) do
                 local player = playerData.Player
                 if player and player.Parent then
                         local isWinner = (player == winner)
-                        
-                        if isWinner then
-                                RemoteEvents.MatchResult:FireClient(player, true, 0, playerData.Deaths)
-                                print("[GameManager] Winner: " .. player.Name)
-                        else
-                                RemoteEvents.MatchResult:FireClient(player, false, 0, playerData.Deaths)
-                        end
+                        RemoteEvents.MatchResult:FireClient(player, isWinner, 0, playerData.Deaths)
                 end
         end
         
-        task.wait(GameConfig.Game.EndGameWaitTime)
+        for i = GameConfig.Game.EndGameWaitTime, 1, -1 do
+                RemoteEvents.ReturnCountdown:FireAllClients(i)
+                task.wait(1)
+        end
         
         for userId, playerData in pairs(activePlayers) do
                 local player = playerData.Player

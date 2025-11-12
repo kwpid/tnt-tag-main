@@ -80,6 +80,8 @@ function PVPMain:OnPlayerHit(attacker, victim)
         end
         hitCooldowns[cooldownKey] = tick()
         
+        RemoteEvents.HitEffect:FireAllClients(victim, attacker)
+        
         if attacker == currentIT then
                 self:TransferTNT(attacker, victim)
         end
@@ -190,7 +192,14 @@ function PVPMain:ExplodeTNT()
         roundActive = false
         
         if currentIT then
-                print("[PVPMain] " .. currentIT.Name .. " exploded!")
+                local aliveCount = self:GetAliveCount()
+                
+                if aliveCount == 2 then
+                        print("[PVPMain] 1v1 situation - only " .. currentIT.Name .. " dies from TNT explosion")
+                else
+                        print("[PVPMain] " .. currentIT.Name .. " exploded!")
+                end
+                
                 self:KillPlayer(currentIT)
                 self:RemoveTNT(currentIT)
                 currentIT = nil

@@ -120,9 +120,7 @@ local function handleHit()
                         
                         if distance <= GameConfig.PVP.HitRange then
                                 RemoteEvents.PlayerHit:FireServer(targetPlayer)
-                                highlightCharacter(targetCharacter)
                                 playArmSwing()
-                                playHitSound()
                                 lastHitTime = tick()
                         end
                 end
@@ -147,6 +145,17 @@ RemoteEvents.TNTTransfer.OnClientEvent:Connect(function(newIT)
                 print("[PVPClient] You are now IT!")
         else
                 print("[PVPClient] " .. newIT.Name .. " is now IT!")
+        end
+end)
+
+RemoteEvents.HitEffect.OnClientEvent:Connect(function(victim, attacker)
+        local victimChar = victim.Character
+        if victimChar then
+                highlightCharacter(victimChar)
+        end
+        
+        if attacker == player then
+                playHitSound()
         end
 end)
 

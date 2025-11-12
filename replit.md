@@ -221,6 +221,15 @@ Debug:
 - **2025-11-12:** Client measures network latency and syncs clock offset every 10 seconds
 - **2025-11-12:** Round countdown now recomputes with latest offset each frame for automatic correction
 - **2025-11-12:** Added "Round ending soon..." message in final 5 seconds before TNT explodes
+- **2025-11-12:** FIXED: UI synchronization issues - all timers now perfectly synced with server events
+- **2025-11-12:** FIXED: Removed "Round ending soon..." message - timer now shows countdown to 0s
+- **2025-11-12:** FIXED: Round and intermission timers display "0s" exactly when TNT explodes/game starts
+- **2025-11-12:** FIXED: Intermission UI now uses server-based timestamps (workspace:GetServerTimeNow())
+- **2025-11-12:** FIXED: Late-joining players now see correct intermission countdown via server timestamp
+- **2025-11-12:** FIXED: Queue teleport reliability - added retry logic with batch + individual fallback
+- **2025-11-12:** FIXED: Teleport failures now retry up to 3 times per player with 1s delay between attempts
+- **2025-11-12:** FIXED: Partial batch teleport success properly handled with nil guards
+- **2025-11-12:** FIXED: Players who fail all teleport attempts are reset to NotQueued status
 
 ## User Preferences
 None specified.

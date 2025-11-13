@@ -186,7 +186,9 @@ function LevelUIController:DisplayLevelUp(data)
                 
                 task.wait(GameConfig.LevelUI.XPGainDelay)
                 
-                currentXP, currentLevel = self:AnimateXPGain(currentXP, currentLevel, gain.amount)
+                local newXP, newLevel = self:AnimateXPGain(currentXP, currentLevel, gain.amount)
+                currentXP = newXP
+                currentLevel = newLevel
         end
         
         task.wait(GameConfig.LevelUI.DisplayTime)

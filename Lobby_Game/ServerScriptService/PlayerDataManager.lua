@@ -136,7 +136,7 @@ function PlayerDataManager:ProcessMatchResult(player, matchData)
         if kills > 0 then
                 local killXP = kills * GameConfig.Rewards.KillXP
                 table.insert(xpGains, {amount = killXP, reason = kills .. " Kills"})
-                self:AddXPSilent(player, killXP)
+                self:AddXP(player, killXP)
         end
         
         if matchData.matchId then
@@ -324,23 +324,6 @@ function PlayerDataManager:AddLoss(player, xpGains)
 end
 
 function PlayerDataManager:AddXP(player, amount)
-        local data = self:GetPlayerData(player)
-        if not data then return end
-        
-        data.XP = data.XP + amount
-        
-        local xpNeeded = self:GetXPForLevel(data.Level)
-        while data.XP >= xpNeeded do
-                data.XP = data.XP - xpNeeded
-                data.Level = data.Level + 1
-                xpNeeded = self:GetXPForLevel(data.Level)
-                print("[PlayerData] " .. player.Name .. " leveled up to level " .. data.Level .. "!")
-        end
-        
-        self:UpdateLeaderstats(player)
-end
-
-function PlayerDataManager:AddXPSilent(player, amount)
         local data = self:GetPlayerData(player)
         if not data then return end
         

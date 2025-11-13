@@ -81,9 +81,18 @@ function PlayerDataManager:LoadPlayerData(player)
                 task.wait(0.5)
                 
                 local joinData = player:GetJoinData()
-                if joinData and joinData.TeleportData then
-                        print("[PlayerData] Found TeleportData for " .. player.Name)
-                        self:ProcessMatchResult(player, joinData.TeleportData)
+                print("[PlayerData] Checking for TeleportData for " .. player.Name)
+                if joinData then
+                        print("[PlayerData] JoinData exists")
+                        if joinData.TeleportData then
+                                print("[PlayerData] TeleportData found!")
+                                print("[PlayerData] TeleportData contents:", joinData.TeleportData)
+                                self:ProcessMatchResult(player, joinData.TeleportData)
+                        else
+                                print("[PlayerData] No TeleportData in JoinData")
+                        end
+                else
+                        print("[PlayerData] No JoinData at all")
                 end
         end)
 end
@@ -161,13 +170,20 @@ function PlayerDataManager:ProcessMatchResult(player, matchData)
         self:SavePlayerData(player, false)
         
         local RemoteEvents = require(ReplicatedStorage:WaitForChild("RemoteEvents"))
-        RemoteEvents.ShowLevelUp:FireClient(player, {
+        local levelUpData = {
                 oldLevel = oldLevel,
                 newLevel = updatedData.Level,
                 oldXP = oldXP,
                 newXP = updatedData.XP,
                 xpGains = xpGains
-        })
+        }
+        
+        print("[PlayerData] Sending ShowLevelUp to " .. player.Name)
+        print("[PlayerData] Level: " .. oldLevel .. " -> " .. updatedData.Level)
+        print("[PlayerData] XP: " .. oldXP .. " -> " .. updatedData.XP)
+        print("[PlayerData] XP Gains count: " .. #xpGains)
+        
+        RemoteEvents.ShowLevelUp:FireClient(player, levelUpData)
         
         print("[PlayerData] Match result processed and saved for " .. player.Name)
 end

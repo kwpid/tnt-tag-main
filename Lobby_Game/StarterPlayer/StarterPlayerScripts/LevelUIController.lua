@@ -206,13 +206,26 @@ function LevelUIController:Initialize()
         
         levelBar.Visible = false
         
+        print("[LevelUI] Connecting to ShowLevelUp RemoteEvent...")
         RemoteEvents.ShowLevelUp.OnClientEvent:Connect(function(data)
+                print("[LevelUI] *** RECEIVED ShowLevelUp event! ***")
+                print("[LevelUI] Data received:", data)
+                
+                if not data then
+                        warn("[LevelUI] No data received!")
+                        return
+                end
+                
+                print("[LevelUI] Old Level:", data.oldLevel, "New Level:", data.newLevel)
+                print("[LevelUI] Old XP:", data.oldXP, "New XP:", data.newXP)
+                print("[LevelUI] XP Gains:", data.xpGains and #data.xpGains or 0)
+                
                 task.spawn(function()
                         self:DisplayLevelUp(data)
                 end)
         end)
         
-        print("[LevelUI] Initialized successfully!")
+        print("[LevelUI] Initialized successfully! Listening for ShowLevelUp events...")
 end
 
 LevelUIController:Initialize()

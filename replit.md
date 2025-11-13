@@ -4,6 +4,13 @@
 A professional Roblox game featuring a queue system, matchmaking, player progression with DataStore persistence, and multi-place teleportation. Players queue in a Lobby_Game, get matched, and teleport to Actual_Game to play TNT Tag—a fast-paced elimination game where players avoid being "IT" when the TNT explodes. The last player standing wins, fostering competitive and engaging gameplay.
 
 ## Recent Changes (November 13, 2025)
+### Manual Return to Lobby Fix
+- **Match Data Transmission:** Fixed issue where manually clicking "Back to Lobby" button didn't send XP/level data to lobby
+- **MatchResult Caching:** Added MatchResult field to activePlayers table to store match telemetry (isWinner, deaths, matchId, saveSuccess)
+- **Race Condition Elimination:** Reordered EndGame logic to populate match results BEFORE showing the button, preventing timing gaps
+- **Data Cleanup:** MatchResult is cleared after teleportation and on player leave to prevent stale data reuse
+- **Consistent Telemetry:** Both automatic and manual lobby returns now send identical match data for XP/level GUI display
+
 ### Level GUI System
 - **XP Progression Display:** Added animated Level GUI that appears when players return from matches
 - **Cumulative XP Animation:** Shows each XP gain source separately (Game Win/Loss, Kills) with smooth progress bar animations

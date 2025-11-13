@@ -122,10 +122,21 @@ function PlayerDataManager:ProcessMatchResult(player, matchData)
         print("[PlayerData] Processing match result for " .. player.Name .. ": " .. (matchData.isWinner and "WIN" or "LOSS"))
         print("[PlayerData] Current stats - Wins: " .. data.Wins .. ", Level: " .. data.Level .. ", XP: " .. data.XP)
         
+        local oldLevel = data.Level
+        local oldXP = data.XP
+        local xpGains = {}
+        
         if matchData.isWinner then
-                self:AddWin(player)
+                self:AddWin(player, xpGains)
         else
-                self:AddLoss(player)
+                self:AddLoss(player, xpGains)
+        end
+        
+        local kills = matchData.kills or 0
+        if kills > 0 then
+                local killXP = kills * GameConfig.Rewards.KillXP
+                table.insert(xpGains, {amount = killXP, reason = kills .. " Kills"})
+                self:AddXPSilent(player, killXP)
         end
         
         if matchData.matchId then
@@ -148,6 +159,15 @@ function PlayerDataManager:ProcessMatchResult(player, matchData)
         
         self:AddRecentMatch(player, recentMatchData)
         self:SavePlayerData(player, false)
+        
+        local RemoteEvents = require(ReplicatedStorage:WaitForChild("RemoteEvents"))
+        RemoteEvents.ShowLevelUp:FireClient(player, {
+                oldLevel = oldLevel,
+                newLevel = updatedData.Level,
+                oldXP = oldXP,
+                newXP = updatedData.XP,
+                xpGains = xpGains
+        })
         
         print("[PlayerData] Match result processed and saved for " .. player.Name)
 end
@@ -263,7 +283,7 @@ function PlayerDataManager:UpdateLeaderstats(player)
         if winStreak then winStreak.Value = data.WinStreak end
 end
 
-function PlayerDataManager:AddWin(player)
+function PlayerDataManager:AddWin(player, xpGains)
         local data = self:GetPlayerData(player)
         if not data then return end
         
@@ -276,13 +296,16 @@ function PlayerDataManager:AddWin(player)
         
         data.LastSaveTimestamp = os.time()
         
+        if xpGains then
+                table.insert(xpGains, {amount = GameConfig.Rewards.WinXP, reason = "Game Win"})
+        end
         self:AddXP(player, GameConfig.Rewards.WinXP)
         self:UpdateLeaderstats(player)
         
         print("[PlayerData] " .. player.Name .. " won! Win streak: " .. data.WinStreak)
 end
 
-function PlayerDataManager:AddLoss(player)
+function PlayerDataManager:AddLoss(player, xpGains)
         local data = self:GetPlayerData(player)
         if not data then return end
         
@@ -291,6 +314,9 @@ function PlayerDataManager:AddLoss(player)
         
         data.LastSaveTimestamp = os.time()
         
+        if xpGains then
+                table.insert(xpGains, {amount = GameConfig.Rewards.LossXP, reason = "Game Participation"})
+        end
         self:AddXP(player, GameConfig.Rewards.LossXP)
         self:UpdateLeaderstats(player)
         
@@ -298,6 +324,23 @@ function PlayerDataManager:AddLoss(player)
 end
 
 function PlayerDataManager:AddXP(player, amount)
+        local data = self:GetPlayerData(player)
+        if not data then return end
+        
+        data.XP = data.XP + amount
+        
+        local xpNeeded = self:GetXPForLevel(data.Level)
+        while data.XP >= xpNeeded do
+                data.XP = data.XP - xpNeeded
+                data.Level = data.Level + 1
+                xpNeeded = self:GetXPForLevel(data.Level)
+                print("[PlayerData] " .. player.Name .. " leveled up to level " .. data.Level .. "!")
+        end
+        
+        self:UpdateLeaderstats(player)
+end
+
+function PlayerDataManager:AddXPSilent(player, amount)
         local data = self:GetPlayerData(player)
         if not data then return end
         

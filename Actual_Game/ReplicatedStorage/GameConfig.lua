@@ -23,7 +23,7 @@ GameConfig.TNT = {
 }
 
 GameConfig.PVP = {
-        HitCooldown = 0.3,
+        HitCooldown = 0.1,
         KnockbackPower = 50,
         HighlightColor = Color3.fromRGB(255, 100, 100),
         HighlightDuration = 0.3,

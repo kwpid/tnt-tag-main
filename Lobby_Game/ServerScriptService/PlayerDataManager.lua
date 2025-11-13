@@ -86,7 +86,11 @@ function PlayerDataManager:LoadPlayerData(player)
                         print("[PlayerData] JoinData exists")
                         if joinData.TeleportData then
                                 print("[PlayerData] TeleportData found!")
-                                print("[PlayerData] TeleportData contents:", joinData.TeleportData)
+                                print("[PlayerData] === TeleportData Contents ===")
+                                for key, value in pairs(joinData.TeleportData) do
+                                        print("[PlayerData]   " .. tostring(key) .. " = " .. tostring(value))
+                                end
+                                print("[PlayerData] ===========================")
                                 self:ProcessMatchResult(player, joinData.TeleportData)
                         else
                                 print("[PlayerData] No TeleportData in JoinData")
@@ -98,10 +102,21 @@ function PlayerDataManager:LoadPlayerData(player)
 end
 
 function PlayerDataManager:ProcessMatchResult(player, matchData)
+        print("[PlayerData] === ProcessMatchResult Called ===")
+        print("[PlayerData] Player: " .. player.Name)
+        print("[PlayerData] matchData type: " .. type(matchData))
+        
         if type(matchData) ~= "table" then
                 print("[PlayerData] Invalid matchData type for " .. player.Name)
                 return
         end
+        
+        print("[PlayerData] matchData.isWinner = " .. tostring(matchData.isWinner))
+        print("[PlayerData] matchData.kills = " .. tostring(matchData.kills))
+        print("[PlayerData] matchData.deaths = " .. tostring(matchData.deaths))
+        print("[PlayerData] matchData.mode = " .. tostring(matchData.mode))
+        print("[PlayerData] matchData.matchId = " .. tostring(matchData.matchId))
+        print("[PlayerData] matchData.alreadyProcessed = " .. tostring(matchData.alreadyProcessed))
         
         if matchData.isWinner == nil then
                 print("[PlayerData] No winner data in matchData for " .. player.Name)

@@ -6,7 +6,7 @@ GameConfig.DataStore = {
 }
 
 GameConfig.SubPlace = {
-        PlaceId = 0,
+        PlaceId = 131378206545460,
         AccessCode = nil
 }
 
@@ -17,7 +17,7 @@ GameConfig.Queue = {
         MaxQueueTime = 120,
         MatchmakingInterval = 5,
         QueueUpdateInterval = 1,
-        AvailableRegions = {"NA-East", "NA-West", "EU", "Asia", "Auto"},
+        AvailableRegions = { "NA-East", "NA-West", "EU", "Asia", "Auto" },
         DefaultRegion = "Auto",
         RankedEnabled = false,
         RankedMMRRange = 200,

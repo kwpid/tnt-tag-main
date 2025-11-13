@@ -39,6 +39,20 @@ GameConfig.UI = {
         BlurTransitionTime = 0.3,
 }
 
+GameConfig.LevelUI = {
+        ShowDuration = 0.4,
+        HideDuration = 0.4,
+        ShowEasingStyle = Enum.EasingStyle.Back,
+        ShowEasingDirection = Enum.EasingDirection.Out,
+        HideEasingStyle = Enum.EasingStyle.Back,
+        HideEasingDirection = Enum.EasingDirection.In,
+        BarFillDuration = 0.8,
+        BarFillEasingStyle = Enum.EasingStyle.Quad,
+        BarFillEasingDirection = Enum.EasingDirection.Out,
+        XPGainDelay = 0.3,
+        DisplayTime = 5.0,
+}
+
 GameConfig.Sounds = {
         ButtonHover = "rbxassetid://10066931761",
         ButtonClick = "rbxassetid://10066936129",

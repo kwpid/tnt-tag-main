@@ -171,11 +171,11 @@ function PlayerDataManager:UpdateLeaderstats(player)
         if winStreak then winStreak.Value = data.WinStreak end
 end
 
-function PlayerDataManager:RecordMatchResult(player, isWin, deaths)
+function PlayerDataManager:RecordMatchResult(player, isWin, deaths, kills)
         local data = self:GetPlayerData(player)
         if not data then
                 warn("[PlayerData] No data found for " .. player.Name)
-                return nil, false
+                return nil, false, nil
         end
         
         local timestamp = os.time()
@@ -185,10 +185,20 @@ function PlayerDataManager:RecordMatchResult(player, isWin, deaths)
         print("[PlayerData] Match ID: " .. matchId)
         print("[PlayerData] Before - Wins: " .. data.Wins .. ", Level: " .. data.Level .. ", XP: " .. data.XP)
         
+        local oldLevel = data.Level
+        local oldXP = data.XP
+        
         data = PlayerDataService.RecordMatch(data, isWin, deaths)
         
-        local xpGained = isWin and GameConfig.Rewards.WinXP or GameConfig.Rewards.LossXP
-        data = PlayerDataService.AddXP(data, xpGained)
+        local baseXP = isWin and GameConfig.Rewards.WinXP or GameConfig.Rewards.LossXP
+        data = PlayerDataService.AddXP(data, baseXP)
+        
+        local killXP = 0
+        kills = kills or 0
+        if kills > 0 then
+                killXP = kills * GameConfig.Rewards.KillXP
+                data = PlayerDataService.AddXP(data, killXP)
+        end
         
         data.LastMatchId = matchId
         data.LastSaveTimestamp = timestamp
@@ -196,6 +206,16 @@ function PlayerDataManager:RecordMatchResult(player, isWin, deaths)
         activePlayerData[player.UserId] = data
         
         print("[PlayerData] After - Wins: " .. data.Wins .. ", Level: " .. data.Level .. ", XP: " .. data.XP)
+        
+        local levelUpData = {
+                oldLevel = oldLevel,
+                oldXP = oldXP,
+                newLevel = data.Level,
+                newXP = data.XP,
+                baseXP = baseXP,
+                killXP = killXP,
+                totalXPGained = baseXP + killXP
+        }
         
         self:UpdateLeaderstats(player)
         local saveSuccess = self:SavePlayerData(player, false)
@@ -206,7 +226,7 @@ function PlayerDataManager:RecordMatchResult(player, isWin, deaths)
                 warn("[PlayerData] Failed to save match result for " .. player.Name)
         end
         
-        return matchId, saveSuccess
+        return matchId, saveSuccess, levelUpData
 end
 
 local playerDataManager = PlayerDataManager.new()

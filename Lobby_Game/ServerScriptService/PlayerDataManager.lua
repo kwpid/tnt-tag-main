@@ -124,11 +124,50 @@ function PlayerDataManager:ProcessMatchResult(player, matchData)
         end
         
         if matchData.alreadyProcessed then
-                print("[PlayerData] Match already processed in sub-place for " .. player.Name .. ", skipping duplicate application")
+                print("[PlayerData] Match already processed in sub-place for " .. player.Name .. ", showing Level GUI without reapplying stats")
                 local data = self:GetPlayerData(player)
                 if data then
                         print("[PlayerData] Current stats - Wins: " .. data.Wins .. ", Level: " .. data.Level .. ", XP: " .. data.XP)
                 end
+                
+                if matchData.levelUpData and matchData.levelUpData.oldLevel then
+                        local levelUpData = matchData.levelUpData
+                        print("[PlayerData] Using levelUpData from sub-place")
+                        
+                        local xpGains = {}
+                        local baseXP = levelUpData.baseXP or (matchData.isWinner and GameConfig.Rewards.WinXP or GameConfig.Rewards.LossXP)
+                        local killXP = levelUpData.killXP or 0
+                        
+                        if matchData.isWinner then
+                                table.insert(xpGains, {amount = baseXP, reason = "Game Win"})
+                        else
+                                table.insert(xpGains, {amount = baseXP, reason = "Game Loss"})
+                        end
+                        
+                        if killXP > 0 then
+                                local kills = matchData.kills or 0
+                                table.insert(xpGains, {amount = killXP, reason = kills .. " Kills"})
+                        end
+                        
+                        local RemoteEvents = require(ReplicatedStorage:WaitForChild("RemoteEvents"))
+                        local displayData = {
+                                oldLevel = levelUpData.oldLevel,
+                                newLevel = levelUpData.newLevel,
+                                oldXP = levelUpData.oldXP,
+                                newXP = levelUpData.newXP,
+                                xpGains = xpGains
+                        }
+                        
+                        print("[PlayerData] Sending ShowLevelUp to " .. player.Name .. " (display-only mode)")
+                        print("[PlayerData] Level: " .. tostring(levelUpData.oldLevel) .. " -> " .. tostring(levelUpData.newLevel))
+                        print("[PlayerData] XP: " .. tostring(levelUpData.oldXP) .. " -> " .. tostring(levelUpData.newXP))
+                        print("[PlayerData] XP Gains count: " .. #xpGains)
+                        
+                        RemoteEvents.ShowLevelUp:FireClient(player, displayData)
+                else
+                        warn("[PlayerData] No valid levelUpData in match data, cannot show Level GUI")
+                end
+                
                 return
         end
         

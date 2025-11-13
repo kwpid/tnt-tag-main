@@ -44,7 +44,7 @@ function GameManager:Initialize()
                 if playerData and playerData.MatchResult then
                         local result = playerData.MatchResult
                         print("[GameManager] Manual return to lobby for " .. player.Name .. " with match data")
-                        self:TeleportToLobby(player, result.isWinner, result.deaths, result.matchId, result.saveSuccess)
+                        self:TeleportToLobby(player, result.isWinner, result.deaths, result.matchId, result.saveSuccess, result.levelUpData, result.kills)
                         playerData.MatchResult = nil
                 else
                         print("[GameManager] Manual return to lobby for " .. player.Name .. " without match data")
@@ -296,18 +296,21 @@ function GameManager:EndGame(winner)
                 local player = playerData.Player
                 if player and player.Parent then
                         local isWinner = (player == winner)
-                        local matchId, saveSuccess = PlayerDataManager:RecordMatchResult(player, isWinner, playerData.Deaths)
+                        local kills = playerData.Kills or 0
+                        local matchId, saveSuccess, levelUpData = PlayerDataManager:RecordMatchResult(player, isWinner, playerData.Deaths, kills)
                         playerMatchIds[userId] = matchId
                         playerSaveStatus[userId] = saveSuccess
                         
                         playerData.MatchResult = {
                                 isWinner = isWinner,
                                 deaths = playerData.Deaths,
+                                kills = kills,
                                 matchId = matchId,
-                                saveSuccess = saveSuccess
+                                saveSuccess = saveSuccess,
+                                levelUpData = levelUpData
                         }
                         
-                        RemoteEvents.MatchResult:FireClient(player, isWinner, 0, playerData.Deaths)
+                        RemoteEvents.MatchResult:FireClient(player, isWinner, kills, playerData.Deaths)
                 end
         end
         
@@ -324,9 +327,11 @@ function GameManager:EndGame(winner)
                         local isWinner = (player == winner)
                         local matchId = playerMatchIds[userId]
                         local saveSuccess = playerSaveStatus[userId]
+                        local levelUpData = playerData.MatchResult and playerData.MatchResult.levelUpData or nil
+                        local kills = playerData.MatchResult and playerData.MatchResult.kills or 0
                         print("[GameManager] Teleporting " .. player.Name .. " back to lobby (Save: " .. tostring(saveSuccess) .. ")")
                         player.Team = Teams.Lobby
-                        self:TeleportToLobby(player, isWinner, playerData.Deaths, matchId, saveSuccess)
+                        self:TeleportToLobby(player, isWinner, playerData.Deaths, matchId, saveSuccess, levelUpData, kills)
                         playerData.MatchResult = nil
                 end
         end
@@ -341,7 +346,7 @@ function GameManager:EndGame(winner)
         self:CheckStartGame()
 end
 
-function GameManager:TeleportToLobby(player, isWinner, deaths, matchId, saveSuccess)
+function GameManager:TeleportToLobby(player, isWinner, deaths, matchId, saveSuccess, levelUpData, kills)
         local lobbyPlaceId = GameConfig.LobbyPlaceId or game.PlaceId
         
         local teleportOptions = Instance.new("TeleportOptions")
@@ -350,14 +355,22 @@ function GameManager:TeleportToLobby(player, isWinner, deaths, matchId, saveSucc
         if isWinner ~= nil then
                 local matchData = {
                         isWinner = isWinner,
-                        kills = 0,
+                        kills = kills or 0,
                         deaths = deaths or 0,
                         mode = "Casual",
                         matchId = matchId,
                         alreadyProcessed = saveSuccess == true
                 }
+                
+                if levelUpData and levelUpData.oldLevel and levelUpData.newLevel then
+                        matchData.levelUpData = levelUpData
+                        print("[GameManager] Including level-up data: " .. tostring(levelUpData.oldLevel) .. "->" .. tostring(levelUpData.newLevel) .. ", XP: " .. tostring(levelUpData.oldXP) .. "->" .. tostring(levelUpData.newXP))
+                else
+                        warn("[GameManager] No valid levelUpData to include in teleport")
+                end
+                
                 teleportOptions:SetTeleportData(matchData)
-                print("[GameManager] Sending match data: Win=" .. tostring(isWinner) .. ", Deaths=" .. (deaths or 0) .. ", MatchID=" .. tostring(matchId) .. ", Processed=" .. tostring(saveSuccess))
+                print("[GameManager] Sending match data: Win=" .. tostring(isWinner) .. ", Kills=" .. (kills or 0) .. ", Deaths=" .. (deaths or 0) .. ", MatchID=" .. tostring(matchId) .. ", Processed=" .. tostring(saveSuccess))
         end
         
         local success, err = pcall(function()

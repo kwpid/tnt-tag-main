@@ -3,8 +3,15 @@
 ## Overview
 A professional Roblox game featuring a queue system, matchmaking, player progression with DataStore persistence, and multi-place teleportation. Players queue in a Lobby_Game, get matched, and teleport to Actual_Game to play TNT Tag—a fast-paced elimination game where players avoid being "IT" when the TNT explodes. The last player standing wins, fostering competitive and engaging gameplay.
 
-## Recent Changes (November 12, 2025)
-### Cross-Place Data Synchronization Improvements
+## Recent Changes (November 13, 2025)
+### Level GUI System
+- **XP Progression Display:** Added animated Level GUI that appears when players return from matches
+- **Cumulative XP Animation:** Shows each XP gain source separately (Game Win/Loss, Kills) with smooth progress bar animations
+- **Level-Up Visuals:** Bar resets and animates level-ups during XP application with updated level text
+- **Comprehensive Logging:** Added detailed debug logs to track data flow from match end through GUI display
+- **Configuration:** All timing and animation settings in `GameConfig.LevelUI` for easy customization
+
+### Previous: Cross-Place Data Synchronization (November 12, 2025)
 - **Authoritative Sub-Place:** The `Actual_Game` (sub-place) is now the authoritative source for match results. Stats are updated and saved in the sub-place BEFORE players are teleported back to the lobby.
 - **Concurrent-Safe Updates:** Both places now use `UpdateAsync` instead of `SetAsync` to prevent race conditions and data loss during concurrent writes.
 - **Match ID System:** Each match is assigned a unique ID to prevent double-application of rewards if teleportation fails or retries occur.
@@ -21,6 +28,7 @@ None specified.
 - Professional UI with slide-in animations, background blur (24px), and camera FOV zoom.
 - Interactive elements with hover effects, including a red "CANCEL QUEUE" indicator.
 - Sound effects for enhanced user feedback.
+- **Level GUI:** Animated XP progression display with slide-in/out animations, progress bar filling, and XP gain breakdown showing each reward source.
 
 ### Technical Implementations
 - **Game Mode:** Elimination-style TNT Tag with a 45-second round timer.
@@ -39,7 +47,8 @@ None specified.
 - **Max Players:** 25 per server in `Actual_Game`.
 - **Match History:** Last 10 matches tracked.
 - **Leaderstats:** Displays Wins, Level, and Win Streak on the player list.
-- **GameConfig.lua:** Centralized configuration for queue settings, rewards, UI parameters, and DataStore versioning.
+- **Level GUI:** Post-match XP and level progression display with individual XP source breakdown (Win/Loss XP, Kill XP).
+- **GameConfig.lua:** Centralized configuration for queue settings, rewards, UI parameters, Level GUI timing, and DataStore versioning.
 
 ### System Design Choices
 - **Language & Platform:** Lua (Roblox Luau) on Roblox Studio/Engine.

@@ -40,7 +40,16 @@ function GameManager:Initialize()
         end)
         
         RemoteEvents.ReturnToLobby.OnServerEvent:Connect(function(player)
-                self:TeleportToLobby(player)
+                local playerData = activePlayers[player.UserId]
+                if playerData and playerData.MatchResult then
+                        local result = playerData.MatchResult
+                        print("[GameManager] Manual return to lobby for " .. player.Name .. " with match data")
+                        self:TeleportToLobby(player, result.isWinner, result.deaths, result.matchId, result.saveSuccess)
+                        playerData.MatchResult = nil
+                else
+                        print("[GameManager] Manual return to lobby for " .. player.Name .. " without match data")
+                        self:TeleportToLobby(player)
+                end
         end)
         
         print("[GameManager] Initialized successfully! Waiting for players to join...")
@@ -57,7 +66,8 @@ function GameManager:OnPlayerJoin(player)
         activePlayers[player.UserId] = {
                 Player = player,
                 Deaths = 0,
-                Survived = 0
+                Survived = 0,
+                MatchResult = nil
         }
         
         player.Team = Teams.Lobby
@@ -125,6 +135,10 @@ function GameManager:CheckStartGame()
 end
 
 function GameManager:OnPlayerLeave(player)
+        local playerData = activePlayers[player.UserId]
+        if playerData then
+                playerData.MatchResult = nil
+        end
         activePlayers[player.UserId] = nil
 end
 
@@ -275,8 +289,6 @@ function GameManager:EndGame(winner)
         local winnerName = winner and winner.Name or "No one"
         print("[GameManager] Winner: " .. winnerName)
         
-        RemoteEvents.ShowWinner:FireAllClients(winnerName)
-        
         local playerMatchIds = {}
         local playerSaveStatus = {}
         
@@ -287,9 +299,19 @@ function GameManager:EndGame(winner)
                         local matchId, saveSuccess = PlayerDataManager:RecordMatchResult(player, isWinner, playerData.Deaths)
                         playerMatchIds[userId] = matchId
                         playerSaveStatus[userId] = saveSuccess
+                        
+                        playerData.MatchResult = {
+                                isWinner = isWinner,
+                                deaths = playerData.Deaths,
+                                matchId = matchId,
+                                saveSuccess = saveSuccess
+                        }
+                        
                         RemoteEvents.MatchResult:FireClient(player, isWinner, 0, playerData.Deaths)
                 end
         end
+        
+        RemoteEvents.ShowWinner:FireAllClients(winnerName)
         
         for i = GameConfig.Game.EndGameWaitTime, 1, -1 do
                 RemoteEvents.ReturnCountdown:FireAllClients(i)
@@ -305,6 +327,7 @@ function GameManager:EndGame(winner)
                         print("[GameManager] Teleporting " .. player.Name .. " back to lobby (Save: " .. tostring(saveSuccess) .. ")")
                         player.Team = Teams.Lobby
                         self:TeleportToLobby(player, isWinner, playerData.Deaths, matchId, saveSuccess)
+                        playerData.MatchResult = nil
                 end
         end
         

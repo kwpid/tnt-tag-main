@@ -41,6 +41,18 @@ function QueueManager:Initialize()
                 self:RemovePlayerFromQueue(player)
         end)
         
+        TeleportService.TeleportInitFailed:Connect(function(player, teleportResult, errorMessage)
+                warn("[QueueManager] Teleport failed for " .. player.Name .. ": " .. tostring(errorMessage) .. " (" .. tostring(teleportResult) .. ")")
+                
+                if playerStates[player.UserId] then
+                        playerStates[player.UserId] = {
+                                status = QueueService.QueueStatus.NotQueued,
+                                queueData = nil
+                        }
+                        RemoteEvents.QueueStatusUpdate:FireClient(player, QueueService.QueueStatus.NotQueued)
+                end
+        end)
+        
         print("[QueueManager] Initialized successfully!")
 end
 

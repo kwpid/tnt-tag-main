@@ -36,6 +36,7 @@ RemoteEvents.MatchFound = createRemoteEvent("MatchFound")
 RemoteEvents.MatchResult = createRemoteEvent("MatchResult")
 RemoteEvents.MatchResultReceived = createRemoteEvent("MatchResultReceived")
 RemoteEvents.ShowLevelUp = createRemoteEvent("ShowLevelUp")
+RemoteEvents.LevelUIReady = createRemoteEvent("LevelUIReady")
 RemoteEvents.GetQueueStatus = createRemoteFunction("GetQueueStatus")
 
 return RemoteEvents

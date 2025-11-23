@@ -218,6 +218,7 @@ function LevelUIController:Initialize()
         end)
 
         print("[LevelUI] Initialized successfully! Listening for ShowLevelUp events...")
+        RemoteEvents.LevelUIReady:FireServer()
 end
 
 LevelUIController:Initialize()

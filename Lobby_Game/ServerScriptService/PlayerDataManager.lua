@@ -12,6 +12,8 @@ local PlayerDataManager = {}
 PlayerDataManager.__index = PlayerDataManager
 
 local activePlayerData = {}
+local pendingLevelUpData = {}
+local playerReadyStatus = {}
 
 local DEFAULT_DATA = {
         Wins = 0,
@@ -43,11 +45,25 @@ function PlayerDataManager:Initialize()
         
         Players.PlayerRemoving:Connect(function(player)
                 self:SavePlayerData(player, true)
+                pendingLevelUpData[player.UserId] = nil
+                playerReadyStatus[player.UserId] = nil
         end)
         
         game:BindToClose(function()
                 for _, player in ipairs(Players:GetPlayers()) do
                         self:SavePlayerData(player, true)
+                end
+        end)
+        
+        local RemoteEvents = require(ReplicatedStorage:WaitForChild("RemoteEvents"))
+        RemoteEvents.LevelUIReady.OnServerEvent:Connect(function(player)
+                print("[PlayerData] " .. player.Name .. " is ready for Level UI")
+                playerReadyStatus[player.UserId] = true
+                
+                if pendingLevelUpData[player.UserId] then
+                        print("[PlayerData] Sending pending Level UI data to " .. player.Name)
+                        RemoteEvents.ShowLevelUp:FireClient(player, pendingLevelUpData[player.UserId])
+                        pendingLevelUpData[player.UserId] = nil
                 end
         end)
         
@@ -163,7 +179,12 @@ function PlayerDataManager:ProcessMatchResult(player, matchData)
                         print("[PlayerData] XP: " .. tostring(levelUpData.oldXP) .. " -> " .. tostring(levelUpData.newXP))
                         print("[PlayerData] XP Gains count: " .. #xpGains)
                         
-                        RemoteEvents.ShowLevelUp:FireClient(player, displayData)
+                        if playerReadyStatus[player.UserId] then
+                                RemoteEvents.ShowLevelUp:FireClient(player, displayData)
+                        else
+                                print("[PlayerData] Player not ready, queuing Level UI data")
+                                pendingLevelUpData[player.UserId] = displayData
+                        end
                 else
                         warn("[PlayerData] No valid levelUpData in match data, cannot show Level GUI")
                 end
@@ -237,7 +258,12 @@ function PlayerDataManager:ProcessMatchResult(player, matchData)
         print("[PlayerData] XP: " .. oldXP .. " -> " .. updatedData.XP)
         print("[PlayerData] XP Gains count: " .. #xpGains)
         
-        RemoteEvents.ShowLevelUp:FireClient(player, levelUpData)
+        if playerReadyStatus[player.UserId] then
+                RemoteEvents.ShowLevelUp:FireClient(player, levelUpData)
+        else
+                print("[PlayerData] Player not ready, queuing Level UI data")
+                pendingLevelUpData[player.UserId] = levelUpData
+        end
         
         print("[PlayerData] Match result processed and saved for " .. player.Name)
 end

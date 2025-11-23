@@ -11,6 +11,7 @@ local camera = workspace.CurrentCamera
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local QueueService = require(ReplicatedStorage:WaitForChild("QueueService"))
+local TeleportService = game:GetService("TeleportService")
 local RemoteEvents = require(ReplicatedStorage:WaitForChild("RemoteEvents"))
 
 local queueGUI = playerGui:WaitForChild("QueueGUI")
@@ -240,7 +241,7 @@ function QueueUIController:Initialize()
         
         self:AddHoverEffect(casualButton, Color3.fromRGB(70, 220, 120), Color3.fromRGB(50, 200, 100), true)
         self:AddHoverEffect(rankedButton, Color3.fromRGB(70, 120, 220), Color3.fromRGB(50, 100, 200), true)
-        self:AddHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50), false)
+        self:AddHoverEffect(closeButton, Color3.fromRGB(220, 70, 70), nil, false)
         
         self.originalButtonColor = queueButton.BackgroundColor3
         
@@ -304,6 +305,15 @@ function QueueUIController:Initialize()
         RemoteEvents.MatchFound.OnClientEvent:Connect(function()
                 print("[QueueUI] Match found! Preparing to teleport...")
                 self:PlaySound("MatchFound")
+        end)
+        
+        TeleportService.TeleportInitFailed:Connect(function(result, errorMessage)
+                warn("[QueueUI] Teleport failed: " .. tostring(errorMessage))
+                self.isQueued = false
+                self.currentStatus = QueueService.QueueStatus.NotQueued
+                self:StopDotAnimation()
+                self:UpdateQueueButtonText()
+                queueButton.BackgroundColor3 = self.originalButtonColor
         end)
         
         print("[QueueUI] Initialized successfully!")
